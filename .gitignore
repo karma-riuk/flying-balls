@@ -1,2 +1,4 @@
 balls
-balls.o
+*.o
+compile_commands.json
+.cache/
