@@ -11,7 +11,7 @@ CXXFLAGS=-Wall -g -O2 $(PROFILING_CFLAGS) $(GTK_CFLAGS)
 LIBS=$(GTK_LIBS) -lm
 
 PROGS=balls
-OBJS=balls.o c_index.o game.o gravity.o spaceship.o main.o
+OBJS=balls.o c_index.o game.o gravity.o spaceship.o main.o polygons.o
 
 # dependencies (gcc -MM *.cc)
 balls.o: balls.cc game.h balls.h vec2d.h gravity.h
@@ -24,7 +24,7 @@ stats.o: stats.cc
 
 .PHONY: run
 run: balls
-	./balls
+	./balls n=0
 
 .PHONY: all
 all: $(PROGS)
