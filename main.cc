@@ -44,6 +44,7 @@ void update_state() {
         check_collisions();
     for (unsigned int i = 0; i < n_balls; ++i)
         ball_update_state(balls + i);
+    polygons_update_state();
     spaceship_update_state();
 }
 
