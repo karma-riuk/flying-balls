@@ -18,7 +18,9 @@ class polygon {
     std::vector<vec2d> points;
     std::vector<vec2d> global_points = points;
 
-    vec2d speed, angular_speed;
+    vec2d speed;
+    double angular_speed;
+    double mass = 1;
 
     void draw(cairo_t* cr) const;
     void draw_bounding_rect(cairo_t* cr) const;
@@ -51,7 +53,7 @@ class polygon {
         return *this;
     }
 
-    polygon& set_angular_speed(vec2d as) {
+    polygon& set_angular_speed(double as) {
         angular_speed = as;
         return *this;
     }
