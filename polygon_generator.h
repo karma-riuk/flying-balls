@@ -7,14 +7,14 @@
 
 namespace poly_generate {
 
-    polygon rectangle(double width, double height);
+    polygon rectangle(double width, double height, double mass = 1);
 
-    inline polygon square(double width) {
+    inline polygon square(double width, double mass = 1) {
         assert(width > 0);
-        return rectangle(width, width);
+        return rectangle(width, width, mass);
     };
 
-    polygon triangle(double side1, double side2, double angle);
+    polygon triangle(double side1, double side2, double angle, double mass = 1);
 
 }; // namespace poly_generate
 #endif

@@ -1,43 +1,184 @@
 #include "polygons.h"
 
 #include "cairo.h"
+#include "collisions.h"
 #include "game.h"
 #include "matrix.h"
 #include "polygon_generator.h"
 
 #include <iostream>
+#include <utility>
 
 polygon* polygons = nullptr;
-uint n_polygons = 1;
+uint n_polygons = 2;
 
 void polygons_init_state() {
     polygons = new polygon[n_polygons];
 
-    std::cout << "width" << width << std::endl;
-    // polygons[0] = poly_generate::square(200)
-    //                   .set_center({400, 600})
-    //                   .set_angle(37)
-    //                   .set_speed({1, -1});
-    polygons[0] = poly_generate::triangle(150, 150, 30)
-                      .set_center({400, 300})
-                      .set_angle(45)
-                      .set_speed({3, 2});
-    // polygons[2] = poly_generate::rectangle(200, 100).set_center({600, 600});
+    polygons[0] = poly_generate::square(100, 1)
+                      .set_center({200, 530})
+                      .set_angle(-30)
+                      .set_angular_speed(0)
+                      .set_speed({200, -200});
+    // polygons[0] = poly_generate::triangle(150, 150, 30)
+    //                   .set_center({200, 400})
+    //                   .set_angle(13)
+    //                   .set_angular_speed(10)
+    //                   .set_speed({200, 50});
+    polygons[1] = poly_generate::rectangle(50, height / 2., INFINITY)
+                      .set_center({25 + width * 1. / 2, height / 2.})
+                      .set_angle(0);
 }
 
 static double to_rad(double angle_in_deg) {
-    static double PI_180 = M_PI / 180;
+    static double PI_180 = M_PI / 180.;
     return angle_in_deg * PI_180;
+}
+
+static double to_deg(double angle_in_rad) {
+    static double PI_180 = 180. / M_PI;
+    return angle_in_rad * PI_180;
+}
+
+static bool is_point_inside_rect(rect rect, vec2d point) {
+    vec2d tl = rect.first, br = rect.second;
+    return point.x > tl.x && point.x < br.x && point.y > tl.y && point.y < br.y;
+}
+
+static bool bounding_rects_collide(rect cur_bound, rect other_bound) {
+    vec2d other_tl = other_bound.first, other_br = other_bound.second;
+    return is_point_inside_rect(cur_bound, other_tl) ||
+           is_point_inside_rect(cur_bound, {other_tl.x, other_br.y}) ||
+           is_point_inside_rect(cur_bound, {other_br.x, other_tl.y}) ||
+           is_point_inside_rect(cur_bound, other_br);
+}
+
+static double impulse_parameter(vec2d v_ab1,
+    vec2d n,
+    double m_a,
+    double m_b,
+    vec2d r_ap,
+    vec2d r_bp,
+    double I_a,
+    double I_b,
+    double e) {
+    double nominator = -(1 + e) * vec2d::dot(v_ab1, n);
+    double denominator = 1 / m_a + 1 / m_b +
+                         std::pow(vec2d::cross(r_ap, n), 2) / I_a +
+                         std::pow(vec2d::cross(r_bp, n), 2) / I_b;
+    return nominator / denominator;
+}
+
+static void handle_collision(collision& c, polygon* a, polygon* b) {
+    // see https://www.myphysicslab.com/engine2D/collision-en.html for the
+    // formulas
+
+    double omega_a1 = to_rad(a->angular_speed);
+    double omega_b1 = to_rad(b->angular_speed);
+
+    vec2d r_ap = c.impact_point - a->centroid();
+    vec2d v_ap1 = a->speed + vec2d::cross(omega_a1, r_ap);
+    std::cout << "  "
+              << "r_ap = " << r_ap << std::endl;
+    std::cout << "  "
+              << "v_ap1 = " << v_ap1 << std::endl;
+
+    vec2d r_bp = c.impact_point - b->centroid();
+    vec2d v_bp1 = b->speed + vec2d::cross(omega_b1, r_bp);
+    std::cout << "  "
+              << "r_bp = " << r_bp << std::endl;
+    std::cout << "  "
+              << "v_bp1 = " << v_bp1 << std::endl;
+
+    vec2d v_ab1 = v_ap1 - v_bp1;
+    std::cout << "    "
+              << "v_ab1 = " << v_ab1 << std::endl;
+
+    double I_a = a->inertia, I_b = b->inertia;
+    std::cout << "  Parameters for j: " << std::endl;
+    std::cout << "    "
+              << "v_ab1 = " << v_ab1 << std::endl;
+    std::cout << "    "
+              << "n = " << c.n << std::endl;
+    std::cout << "    "
+              << "m_a = " << a->mass << std::endl;
+    std::cout << "    "
+              << "m_b = " << b->mass << std::endl;
+    std::cout << "    "
+              << "r_ap = " << r_ap << std::endl;
+    std::cout << "    "
+              << "r_bp = " << r_bp << std::endl;
+    std::cout << "    "
+              << "I_a = " << I_a << std::endl;
+    std::cout << "    "
+              << "I_b = " << I_b << std::endl;
+
+    double j = impulse_parameter(
+        v_ab1, c.n, a->mass, b->mass, r_ap, r_bp, I_a, I_b, 1);
+    std::cout << "====> j = " << j << std::endl;
+
+    vec2d v_a2 = a->speed + j * c.n / a->mass;
+    vec2d v_b2 = b->speed - j * c.n / b->mass;
+    std::cout << "  "
+              << "v_a2 = " << v_a2 << std::endl;
+    std::cout << "  "
+              << "v_b2 = " << v_b2 << std::endl;
+
+    double omega_a2 = omega_a1 + vec2d::cross(r_ap, j * c.n) / I_a;
+    double omega_b2 = omega_b1 - vec2d::cross(r_bp, j * c.n) / I_b;
+    std::cout << "  "
+              << "omega_a2 = " << omega_a2 << std::endl;
+    std::cout << "  "
+              << "omega_b2 = " << omega_b2 << std::endl;
+
+    a->speed = v_a2;
+    a->angular_speed = to_deg(omega_a2);
+
+    b->speed = v_b2;
+    b->angular_speed = to_deg(omega_b2);
+}
+
+static void check_collisions(polygon* current_p) {
+    rect cur_bound = current_p->get_bounding_box();
+
+    for (polygon* other_p = polygons; other_p != polygons + n_polygons;
+         ++other_p) {
+        if (other_p == current_p) // polygons don't collide with themselves
+            continue;
+        rect other_bound = other_p->get_bounding_box();
+        if (bounding_rects_collide(cur_bound, other_bound) ||
+            bounding_rects_collide(other_bound, cur_bound)) {
+            // std::cout << "Bounding boxes do collide" << std::endl;
+            collision c = collides(*current_p, *other_p);
+            if (c.collides) {
+                std::cout << "colliding" << std::endl;
+                std::cout << "speed before: " << current_p->speed << std::endl;
+                std::cout << "angular speed before: "
+                          << current_p->angular_speed << std::endl;
+                handle_collision(c, current_p, other_p);
+                std::cout << "speed after: " << current_p->speed << std::endl;
+                std::cout << "angular speed after: " << current_p->angular_speed
+                          << std::endl;
+                std::cout << std::endl;
+            }
+        }
+    }
 }
 
 static void check_border_collision(polygon* p) {
     for (auto& point : p->global_points) {
-        if (point.x <= 0 || point.x >= width) {
-            p->speed.x *= -1;
-            break;
-        }
-        if (point.y <= 0 || point.y >= height) {
-            p->speed.y *= -1;
+        bool hit_vert_wall = point.x <= 0 || point.x >= width;
+        bool hit_hori_wall = point.y <= 0 || point.y >= width;
+
+        if (hit_vert_wall || hit_hori_wall) {
+            p->set_angular_speed(-p->angular_speed); // this is not accurate,
+                                                     // but avoids bugs for now
+
+            if (hit_vert_wall)
+                p->speed.x *= -1;
+            if (hit_hori_wall)
+                p->speed.y *= -1;
+
             break;
         }
     }
@@ -45,9 +186,12 @@ static void check_border_collision(polygon* p) {
 
 void polygons_update_state() {
     for (polygon* p = polygons; p != polygons + n_polygons; ++p) {
-        p->rotate(1);
+        if (p->mass == INFINITY) // immovable objects don't need to be updated
+            continue;
         check_border_collision(p);
-        p->translate(p->speed);
+        check_collisions(p);
+        p->rotate(delta * p->angular_speed);
+        p->translate(delta * p->speed);
     }
 }
 
@@ -67,13 +211,13 @@ void polygon::draw_bounding_rect(cairo_t* cr) const {
     cairo_set_dash(cr, dashes, 2, 0);
 
     auto bb = this->get_bounding_box();
-    vec2d min = bb.first, max = bb.second;
+    vec2d tl = bb.first, br = bb.second;
 
-    cairo_line_to(cr, min.x, min.y);
-    cairo_line_to(cr, min.x, max.y);
-    cairo_line_to(cr, max.x, max.y);
-    cairo_line_to(cr, max.x, min.y);
-    cairo_line_to(cr, min.x, min.y);
+    cairo_line_to(cr, tl.x, tl.y);
+    cairo_line_to(cr, tl.x, br.y);
+    cairo_line_to(cr, br.x, br.y);
+    cairo_line_to(cr, br.x, tl.y);
+    cairo_line_to(cr, tl.x, tl.y);
     cairo_stroke(cr);
     cairo_set_dash(cr, 0, 0, 0); // disable dashes
 }
@@ -88,6 +232,13 @@ void polygon::draw(cairo_t* cr) const {
 
     cairo_line_to(cr, this->global_points[0].x, this->global_points[0].y);
     cairo_stroke(cr);
+
+    // draw centroid
+    vec2d centroid = this->centroid();
+    cairo_translate(cr, centroid.x, centroid.y);
+    cairo_arc(cr, 0, 0, 1, 0, 2 * M_PI);
+    cairo_stroke(cr);
+    cairo_translate(cr, -centroid.x, -centroid.y);
 }
 
 void polygons_draw(cairo_t* cr) {

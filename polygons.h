@@ -8,6 +8,8 @@
 #include <utility>
 #include <vector>
 
+typedef std::pair<vec2d, vec2d> rect;
+
 class polygon {
   private:
     void update_global_points();
@@ -16,30 +18,32 @@ class polygon {
     vec2d center;
     double angle;
     std::vector<vec2d> points;
+    double inertia;
+    double mass;
+
     std::vector<vec2d> global_points = points;
 
     vec2d speed;
     double angular_speed;
-    double mass = 1;
 
     void draw(cairo_t* cr) const;
     void draw_bounding_rect(cairo_t* cr) const;
 
-    std::pair<vec2d, vec2d> get_bounding_box() const {
-        vec2d min{INFINITY, INFINITY}, max{-INFINITY, -INFINITY};
+    rect get_bounding_box() const {
+        vec2d tl{INFINITY, INFINITY}, tr{-INFINITY, -INFINITY};
 
         for (auto& point : this->global_points) {
-            if (point.x < min.x)
-                min.x = point.x;
-            if (point.y < min.y)
-                min.y = point.y;
+            if (point.x < tl.x)
+                tl.x = point.x;
+            if (point.y < tl.y)
+                tl.y = point.y;
 
-            if (point.x > max.x)
-                max.x = point.x;
-            if (point.y > max.y)
-                max.y = point.y;
+            if (point.x > tr.x)
+                tr.x = point.x;
+            if (point.y > tr.y)
+                tr.y = point.y;
         }
-        return {min, max};
+        return {tl, tr};
     }
 
     polygon& set_center(vec2d c) {
@@ -64,6 +68,11 @@ class polygon {
         return *this;
     }
 
+    polygon& set_mass(double m) {
+        mass = m;
+        return *this;
+    }
+
     polygon& translate(vec2d delta) {
         center += delta;
         update_global_points();
@@ -74,6 +83,14 @@ class polygon {
         angle += delta;
         update_global_points();
         return *this;
+    }
+
+    vec2d centroid() const {
+        double x = 0, y = 0;
+        for (auto& p : global_points)
+            x += p.x, y += p.y;
+
+        return vec2d{x, y} / points.size();
     }
 };
 

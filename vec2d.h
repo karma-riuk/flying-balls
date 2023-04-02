@@ -41,6 +41,10 @@ class vec2d {
         return vec2d{x - other.x, y - other.y};
     }
 
+    vec2d operator-() const {
+        return vec2d{-x, -y};
+    }
+
     vec2d operator*(double l) const {
         return vec2d{x * l, y * l};
     }
@@ -59,12 +63,28 @@ class vec2d {
         return *this;
     }
 
+    vec2d orthogonal() {
+        return {-y, x};
+    }
+
     static double dot(const vec2d& a, const vec2d& b) {
         return a.x * b.x + a.y * b.y;
     }
 
     static double cross(const vec2d& a, const vec2d& b) {
-        return a.x * b.x + a.y * b.y;
+        return a.x * b.y - a.y * b.x;
+    }
+
+    static vec2d cross(const double omega, const vec2d& v) {
+        return {-omega * v.y, omega * v.x};
+    }
+
+    static double norm(const vec2d& v) {
+        return std::sqrt(dot(v, v));
+    }
+
+    static vec2d normalize(const vec2d& v) {
+        return v / norm(v);
     }
 };
 
