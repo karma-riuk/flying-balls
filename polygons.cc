@@ -10,24 +10,37 @@
 #include <utility>
 
 polygon* polygons = nullptr;
-uint n_polygons = 2;
+uint n_polygons = 6;
 
 void polygons_init_state() {
     polygons = new polygon[n_polygons];
 
-    polygons[0] = poly_generate::square(100, 1)
-                      .set_center({200, 530})
-                      .set_angle(-30)
-                      .set_angular_speed(0)
-                      .set_speed({200, -200});
+    int wall_thickness = 50;
+    // north wall
+    polygons[0] = poly_generate::rectangle(width, wall_thickness, INFINITY)
+                      .set_center({width / 2., -wall_thickness / 2.});
+    // south wall
+    polygons[1] = poly_generate::rectangle(width, wall_thickness, INFINITY)
+                      .set_center({width / 2., height + wall_thickness / 2.});
+    // west wall
+    polygons[2] = poly_generate::rectangle(wall_thickness, height, INFINITY)
+                      .set_center({-wall_thickness / 2., height / 2.});
+    // east wall
+    polygons[3] = poly_generate::rectangle(wall_thickness, height, INFINITY)
+                      .set_center({width + wall_thickness / 2., height / 2.});
     // polygons[0] = poly_generate::triangle(150, 150, 30)
     //                   .set_center({200, 400})
     //                   .set_angle(13)
     //                   .set_angular_speed(10)
     //                   .set_speed({200, 50});
-    polygons[1] = poly_generate::rectangle(50, height / 2., INFINITY)
+    polygons[4] = poly_generate::rectangle(50, height / 2., INFINITY)
                       .set_center({25 + width * 1. / 2, height / 2.})
                       .set_angle(0);
+    polygons[5] = poly_generate::square(100, 1)
+                      .set_center({200, 200})
+                      .set_angle(-30)
+                      .set_angular_speed(0)
+                      .set_speed({200, -200});
 }
 
 static double to_rad(double angle_in_deg) {
@@ -63,55 +76,57 @@ static double impulse_parameter(vec2d v_ab1,
     double I_b,
     double e) {
     double nominator = -(1 + e) * vec2d::dot(v_ab1, n);
-    double denominator = 1 / m_a + 1 / m_b +
-                         std::pow(vec2d::cross(r_ap, n), 2) / I_a +
-                         std::pow(vec2d::cross(r_bp, n), 2) / I_b;
+
+    double r_ap_cross_n = vec2d::cross(r_ap, n);
+    double r_bp_cross_n = vec2d::cross(r_bp, n);
+    double denominator = 1 / m_a + 1 / m_b + r_ap_cross_n * r_ap_cross_n / I_a +
+                         r_bp_cross_n * r_bp_cross_n / I_b;
+
     return nominator / denominator;
+}
+
+static int8_t sign(double d) {
+    return d >= 0 ? 1 : -1;
 }
 
 static void handle_collision(collision& c, polygon* a, polygon* b) {
     // see https://www.myphysicslab.com/engine2D/collision-en.html for the
     // formulas
 
+    // avoid the polygons getting stuck if, on the frame after the impact,
+    // the polygon a is still inside of b
+    // std::cout << "sign(v_a x n) = " <<  << std::endl;
+    // if (vec2d::dot(a->speed, c.n) > 0 &&
+    //     vec2d::dot(a->speed, c.impact_point - a->centroid()) > 0 &&
+    //     sign(vec2d::cross(c.n, a->speed)) == -sign(a->angular_speed))
+    //     // might have to tweak this condition
+    //     return;
     double omega_a1 = to_rad(a->angular_speed);
     double omega_b1 = to_rad(b->angular_speed);
 
     vec2d r_ap = c.impact_point - a->centroid();
     vec2d v_ap1 = a->speed + vec2d::cross(omega_a1, r_ap);
-    std::cout << "  "
-              << "r_ap = " << r_ap << std::endl;
-    std::cout << "  "
-              << "v_ap1 = " << v_ap1 << std::endl;
+    std::cout << "    r_ap = " << r_ap << std::endl;
+    std::cout << "    v_ap1 = " << v_ap1 << std::endl;
 
     vec2d r_bp = c.impact_point - b->centroid();
     vec2d v_bp1 = b->speed + vec2d::cross(omega_b1, r_bp);
-    std::cout << "  "
-              << "r_bp = " << r_bp << std::endl;
-    std::cout << "  "
-              << "v_bp1 = " << v_bp1 << std::endl;
+    std::cout << "    r_bp = " << r_bp << std::endl;
+    std::cout << "    v_bp1 = " << v_bp1 << std::endl;
 
     vec2d v_ab1 = v_ap1 - v_bp1;
-    std::cout << "    "
-              << "v_ab1 = " << v_ab1 << std::endl;
+    std::cout << "    v_ab1 = " << v_ab1 << std::endl;
 
     double I_a = a->inertia, I_b = b->inertia;
     std::cout << "  Parameters for j: " << std::endl;
-    std::cout << "    "
-              << "v_ab1 = " << v_ab1 << std::endl;
-    std::cout << "    "
-              << "n = " << c.n << std::endl;
-    std::cout << "    "
-              << "m_a = " << a->mass << std::endl;
-    std::cout << "    "
-              << "m_b = " << b->mass << std::endl;
-    std::cout << "    "
-              << "r_ap = " << r_ap << std::endl;
-    std::cout << "    "
-              << "r_bp = " << r_bp << std::endl;
-    std::cout << "    "
-              << "I_a = " << I_a << std::endl;
-    std::cout << "    "
-              << "I_b = " << I_b << std::endl;
+    std::cout << "    v_ab1 = " << v_ab1 << std::endl;
+    std::cout << "    n = " << c.n << std::endl;
+    std::cout << "    m_a = " << a->mass << std::endl;
+    std::cout << "    m_b = " << b->mass << std::endl;
+    std::cout << "    r_ap = " << r_ap << std::endl;
+    std::cout << "    r_bp = " << r_bp << std::endl;
+    std::cout << "    I_a = " << I_a << std::endl;
+    std::cout << "    I_b = " << I_b << std::endl;
 
     double j = impulse_parameter(
         v_ab1, c.n, a->mass, b->mass, r_ap, r_bp, I_a, I_b, 1);
@@ -119,17 +134,13 @@ static void handle_collision(collision& c, polygon* a, polygon* b) {
 
     vec2d v_a2 = a->speed + j * c.n / a->mass;
     vec2d v_b2 = b->speed - j * c.n / b->mass;
-    std::cout << "  "
-              << "v_a2 = " << v_a2 << std::endl;
-    std::cout << "  "
-              << "v_b2 = " << v_b2 << std::endl;
+    std::cout << "    v_a2 = " << v_a2 << std::endl;
+    std::cout << "    v_b2 = " << v_b2 << std::endl;
 
     double omega_a2 = omega_a1 + vec2d::cross(r_ap, j * c.n) / I_a;
     double omega_b2 = omega_b1 - vec2d::cross(r_bp, j * c.n) / I_b;
-    std::cout << "  "
-              << "omega_a2 = " << omega_a2 << std::endl;
-    std::cout << "  "
-              << "omega_b2 = " << omega_b2 << std::endl;
+    std::cout << "    omega_a2 = " << omega_a2 << std::endl;
+    std::cout << "    omega_b2 = " << omega_b2 << std::endl;
 
     a->speed = v_a2;
     a->angular_speed = to_deg(omega_a2);
@@ -148,7 +159,7 @@ static void check_collisions(polygon* current_p) {
         rect other_bound = other_p->get_bounding_box();
         if (bounding_rects_collide(cur_bound, other_bound) ||
             bounding_rects_collide(other_bound, cur_bound)) {
-            // std::cout << "Bounding boxes do collide" << std::endl;
+            std::cout << "Bounding boxes do collide" << std::endl;
             collision c = collides(*current_p, *other_p);
             if (c.collides) {
                 std::cout << "colliding" << std::endl;
@@ -188,7 +199,7 @@ void polygons_update_state() {
     for (polygon* p = polygons; p != polygons + n_polygons; ++p) {
         if (p->mass == INFINITY) // immovable objects don't need to be updated
             continue;
-        check_border_collision(p);
+        // check_border_collision(p);
         check_collisions(p);
         p->rotate(delta * p->angular_speed);
         p->translate(delta * p->speed);
@@ -223,7 +234,7 @@ void polygon::draw_bounding_rect(cairo_t* cr) const {
 }
 
 void polygon::draw(cairo_t* cr) const {
-    this->draw_bounding_rect(cr);
+    // this->draw_bounding_rect(cr);
 
     cairo_set_source_rgb(cr, 1, 1, 1);
 
