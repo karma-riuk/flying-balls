@@ -18,7 +18,7 @@ polygon poly_generate::rectangle(double width, double height, double mass) {
             {-width / 2, height / 2},
             {width / 2, height / 2},
             {width / 2, -height / 2}},
-        one_over_twelve * mass * width * std::pow(height, 3),
+        one_over_twelve * mass * (width * width + height * height),
         mass};
 }
 
