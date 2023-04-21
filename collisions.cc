@@ -43,21 +43,22 @@ static bool separating_axis(
         max_q = std::max(max_q, projection);
     }
 
-    if (max_p >= min_q && max_q >= min_p) {
-        double d;
-        if (max_q - min_p < max_p - min_q) {
-            d = max_q - min_p;
-            *impact_point = min_p_point;
-        } else {
-            d = max_p - min_q;
-            *impact_point = max_p_point;
-        }
-        // push a bit more than needed so the shapes do not overlap in future
-        // tests due to float precision
-        double d_over_o_squared = d / vec2d::dot(axis, axis) + 1e-10;
-        *pv = d_over_o_squared * axis;
-        return false;
+    if (max_p < min_q || max_q < min_p)
+        return true;
+
+    double d;
+    if (max_q - min_p < max_p - min_q) {
+        d = max_q - min_p;
+        *impact_point = min_p_point;
+    } else {
+        d = max_p - min_q;
+        *impact_point = max_p_point;
     }
+    // push a bit more than needed so the shapes do not overlap in
+    // future tests due to float precision
+    double d_over_o_squared = d / vec2d::dot(axis, axis) + 1e-10;
+    *pv = d_over_o_squared * axis;
+    return false;
 
     return true;
 }
