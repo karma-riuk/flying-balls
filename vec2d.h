@@ -67,6 +67,36 @@ class vec2d {
         return {-y, x};
     }
 
+    void draw(cairo_t* cr, vec2d p) {
+        double arrow_lenght_ = 10 * vec2d::norm(*this);
+        double arrow_degrees_ = .5;
+
+        // see
+        // http://kapo-cpp.blogspot.com/2008/10/drawing-arrows-with-cairo.html
+        double angle = atan2(y, x) + M_PI;
+
+        vec2d end = p + (*this) * 30;
+
+        double x1 = end.x + arrow_lenght_ * cos(angle - arrow_degrees_);
+        double y1 = end.y + arrow_lenght_ * sin(angle - arrow_degrees_);
+        double x2 = end.x + arrow_lenght_ * cos(angle + arrow_degrees_);
+        double y2 = end.y + arrow_lenght_ * sin(angle + arrow_degrees_);
+
+        cairo_set_source_rgb(cr, 255, 0, 0);
+
+        cairo_move_to(cr, p.x, p.y);
+        cairo_line_to(cr, end.x, end.y);
+        cairo_stroke(cr);
+
+        cairo_move_to(cr, end.x, end.y);
+        cairo_line_to(cr, x1, y1);
+        cairo_stroke(cr);
+
+        cairo_move_to(cr, end.x, end.y);
+        cairo_line_to(cr, x2, y2);
+        cairo_stroke(cr);
+    }
+
     static double dot(const vec2d& a, const vec2d& b) {
         return a.x * b.x + a.y * b.y;
     }
