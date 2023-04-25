@@ -36,11 +36,24 @@ void polygons_init_state() {
     polygons[4] = poly_generate::rectangle(50, height / 2., INFINITY)
                       .set_center({25 + width * 1. / 2, height / 2.})
                       .set_angle(0);
+
     polygons[5] = poly_generate::square(100, 1)
-                      .set_center({200, 200})
-                      .set_angle(-30)
-                      .set_angular_speed(0)
-                      .set_speed({200, -200});
+                      .set_center({200, 180})
+                      .set_angle(-60)
+                      .set_speed({200, -10});
+
+    // .set_angle(45)
+    // .set_center({600, 650})
+    // .set_speed({-200, -10});
+
+    // .set_center({200, 160})
+    // .set_angle(-45)
+    // .set_speed({200, 10});
+
+    // polygons[5] = poly_generate::regular(100, 8)
+    //                   .set_angle(0)
+    //                   .set_center({600, 650})
+    //                   .set_speed({-200, 200});
 }
 
 static double to_rad(double angle_in_deg) {
@@ -96,16 +109,17 @@ static void handle_collision(collision& c, polygon* a, polygon* b) {
     // avoid the polygons getting stuck if, on the frame after the impact,
     // the polygon a is still inside of b
     // std::cout << "sign(v_a x n) = " <<  << std::endl;
-    // if (vec2d::dot(a->speed, c.n) > 0 &&
-    //     vec2d::dot(a->speed, c.impact_point - a->centroid()) > 0 &&
-    //     sign(vec2d::cross(c.n, a->speed)) == -sign(a->angular_speed))
-    //     // might have to tweak this condition
-    //     return;
+    if (vec2d::dot(a->speed, c.n) > 0 &&
+        vec2d::dot(a->speed, c.impact_point - a->centroid()) > 0 &&
+        sign(vec2d::cross(c.n, a->speed)) == -sign(a->angular_speed))
+        // might have to tweak this condition
+        return;
     double omega_a1 = to_rad(a->angular_speed);
     double omega_b1 = to_rad(b->angular_speed);
 
     vec2d r_ap = c.impact_point - a->centroid();
     vec2d v_ap1 = a->speed + vec2d::cross(omega_a1, r_ap);
+    std::cout << "    p = " << c.impact_point << std::endl;
     std::cout << "    r_ap = " << r_ap << std::endl;
     std::cout << "    v_ap1 = " << v_ap1 << std::endl;
 
@@ -149,6 +163,8 @@ static void handle_collision(collision& c, polygon* a, polygon* b) {
     b->angular_speed = to_deg(omega_b2);
 }
 
+collision col; // tbd
+
 static void check_collisions(polygon* current_p) {
     rect cur_bound = current_p->get_bounding_box();
 
@@ -159,9 +175,10 @@ static void check_collisions(polygon* current_p) {
         rect other_bound = other_p->get_bounding_box();
         if (bounding_rects_collide(cur_bound, other_bound) ||
             bounding_rects_collide(other_bound, cur_bound)) {
-            std::cout << "Bounding boxes do collide" << std::endl;
+            // std::cout << "Bounding boxes do collide" << std::endl;
             collision c = collides(*current_p, *other_p);
             if (c.collides) {
+                col = c;
                 std::cout << "colliding" << std::endl;
                 std::cout << "speed before: " << current_p->speed << std::endl;
                 std::cout << "angular speed before: "
@@ -233,8 +250,17 @@ void polygon::draw_bounding_rect(cairo_t* cr) const {
     cairo_set_dash(cr, 0, 0, 0); // disable dashes
 }
 
+static void draw_circle(cairo_t* cr, vec2d p, double radius) {
+    cairo_translate(cr, p.x, p.y);
+    cairo_arc(cr, 0, 0, radius, 0, 2 * M_PI);
+    cairo_fill(cr);
+    cairo_translate(cr, -p.x, -p.y);
+}
+
 void polygon::draw(cairo_t* cr) const {
     // this->draw_bounding_rect(cr);
+    draw_circle(cr, col.impact_point, 3); // tbd
+    col.n.draw(cr, col.impact_point);     // tbd
 
     cairo_set_source_rgb(cr, 1, 1, 1);
 
@@ -244,12 +270,10 @@ void polygon::draw(cairo_t* cr) const {
     cairo_line_to(cr, this->global_points[0].x, this->global_points[0].y);
     cairo_stroke(cr);
 
+
     // draw centroid
     vec2d centroid = this->centroid();
-    cairo_translate(cr, centroid.x, centroid.y);
-    cairo_arc(cr, 0, 0, 1, 0, 2 * M_PI);
-    cairo_stroke(cr);
-    cairo_translate(cr, -centroid.x, -centroid.y);
+    draw_circle(cr, centroid, 1);
 }
 
 void polygons_draw(cairo_t* cr) {
