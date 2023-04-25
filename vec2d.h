@@ -1,7 +1,10 @@
 #ifndef VEC2D_H_INCLUDED
 #define VEC2D_H_INCLUDED
 
+#include "cairo.h"
+
 #include <cmath>
+#include <iostream>
 #include <ostream>
 
 class vec2d {
@@ -51,6 +54,10 @@ class vec2d {
 
     vec2d operator/(double a) const {
         return vec2d{x / a, y / a};
+    }
+
+    bool operator==(vec2d& o) const {
+        return x == o.x && y == o.y;
     }
 
     vec2d& rotate(double angle) {
