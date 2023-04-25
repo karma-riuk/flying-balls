@@ -5,7 +5,7 @@
 #include "vec2d.h"
 
 struct collision {
-    bool collides;
+    bool collides = false;
     vec2d n; // minimum push vector
     vec2d impact_point;
 };
