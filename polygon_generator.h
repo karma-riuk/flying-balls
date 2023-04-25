@@ -16,5 +16,9 @@ namespace poly_generate {
 
     polygon triangle(double side1, double side2, double angle, double mass = 1);
 
+    polygon regular(double radius, uint n_sides, double mass = 1);
+
+    polygon general(std::vector<vec2d>& points, double mass = 1);
+
 }; // namespace poly_generate
 #endif

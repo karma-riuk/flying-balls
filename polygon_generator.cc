@@ -46,3 +46,34 @@ polygon poly_generate::triangle(
         one_over_36 * mass * base * std::pow(height, 3),
         mass};
 }
+
+polygon poly_generate::regular(double radius, uint n_sides, double mass) {
+    assert(n_sides > 2);
+    std::vector<vec2d> points;
+    points.reserve(n_sides);
+    double theta = 2 * M_PI / n_sides;
+
+    for (uint i = 0; i < n_sides; i++)
+        points.push_back({radius * cos(i * theta), radius * sin(i * theta)});
+
+    double l = vec2d::norm(points[1] - points[0]);
+
+    double sin_, cos_;
+    sincos(M_PI / n_sides, &sin_, &cos_);
+    double cot = cos_ / sin_;
+
+    double inertia = mass * l * l / 24 * (1 + 3 * cot * cot);
+    return polygon{{0, 0}, 0, points, inertia, mass};
+}
+
+static double intertia_of_polygon_subtriangle(
+    vec2d& centroid, vec2d& p1, vec2d& p2) {
+    double base, height;
+    if (vec2d::norm(p1 - centroid) > vec2d::norm(p2 - centroid))
+        base = vec2d::norm(p1 - centroid);
+}
+
+polygon poly_generate::general(std::vector<vec2d>& points, double mass) {
+    double intertia = 0;
+    return polygon{{0, 0}, 0, points, intertia, mass};
+}
