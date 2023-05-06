@@ -10,7 +10,7 @@
 #include <utility>
 
 polygon* polygons = nullptr;
-uint n_polygons = 6;
+uint n_polygons = 7;
 
 void polygons_init_state() {
     polygons = new polygon[n_polygons];
@@ -33,27 +33,64 @@ void polygons_init_state() {
     //                   .set_angle(13)
     //                   .set_angular_speed(10)
     //                   .set_speed({200, 50});
-    polygons[4] = poly_generate::rectangle(50, height / 2., INFINITY)
-                      .set_center({25 + width * 1. / 2, height / 2.})
-                      .set_angle(0);
+    // polygons[4] = poly_generate::rectangle(50, height / 2., INFINITY)
+    //                   .set_center({25 + width * 1. / 2, height / 2.})
+    //                   .set_angle(0);
 
-    polygons[5] = poly_generate::square(100, 1)
+    polygons[4] = poly_generate::rectangle(100, 200, 3)
                       .set_center({200, 180})
-                      .set_angle(-60)
+                      .set_angle(45)
                       .set_speed({200, -10});
 
     // .set_angle(45)
-    // .set_center({600, 650})
-    // .set_speed({-200, -10});
+    // .set_center({300, 650})
+    // .set_angular_speed(181)
+    // .set_speed({200, -10});
 
     // .set_center({200, 160})
     // .set_angle(-45)
     // .set_speed({200, 10});
 
-    // polygons[5] = poly_generate::regular(100, 8)
-    //                   .set_angle(0)
-    //                   .set_center({600, 650})
-    //                   .set_speed({-200, 200});
+    polygons[5] = poly_generate::regular(100, 5)
+                      .set_angle(0)
+                      .set_center({600, 650})
+                      .set_speed({-200, 200});
+
+    // .set_angle(0)
+    // .set_center({600, 650})
+    // .set_speed({-200, -10});
+
+    polygons[6] = poly_generate::general(
+        {{0, 0}, {100, 0}, {100, 100}, {50, 150}, {0, 100}}, 3)
+                      .set_center({400, 400});
+
+#define PROBLEMATIC_COUPLES 0
+
+#if PROBLEMATIC_COUPLES == 1
+    // After about 20 secs (when they are both in the center at the bottom)
+    // the square hits the octogon with a high angular speed and they get stuck,
+    // why?
+    polygons[4] = poly_generate::square(100, 1)
+                      .set_center({300, 180})
+                      .set_angle(-60)
+                      .set_speed({200, -10});
+    polygons[5] = poly_generate::regular(100, 8)
+                      .set_center({600, 650})
+                      .set_speed({-200, 200});
+#endif
+
+#if PROBLEMATIC_COUPLES == 2
+    // After a couple of frames, I think we have the case were we have vertex
+    // colliding with vertex (and not the vertex vs edge we usually have)
+    polygons[4] = poly_generate::square(100, 1)
+                      .set_angle(45)
+                      .set_center({300, 650})
+                      .set_angular_speed(181)
+                      .set_speed({200, -10});
+    polygons[5] = poly_generate::regular(100, 8)
+                      .set_center({600, 650})
+                      .set_speed({-200, -10});
+#endif
 }
 
 static double to_rad(double angle_in_deg) {
@@ -119,42 +156,42 @@ static void handle_collision(collision& c, polygon* a, polygon* b) {
 
     vec2d r_ap = c.impact_point - a->centroid();
     vec2d v_ap1 = a->speed + vec2d::cross(omega_a1, r_ap);
-    std::cout << "    p = " << c.impact_point << std::endl;
-    std::cout << "    r_ap = " << r_ap << std::endl;
-    std::cout << "    v_ap1 = " << v_ap1 << std::endl;
+    // std::cout << "    p = " << c.impact_point << std::endl;
+    // std::cout << "    r_ap = " << r_ap << std::endl;
+    // std::cout << "    v_ap1 = " << v_ap1 << std::endl;
 
     vec2d r_bp = c.impact_point - b->centroid();
     vec2d v_bp1 = b->speed + vec2d::cross(omega_b1, r_bp);
-    std::cout << "    r_bp = " << r_bp << std::endl;
-    std::cout << "    v_bp1 = " << v_bp1 << std::endl;
+    // std::cout << "    r_bp = " << r_bp << std::endl;
+    // std::cout << "    v_bp1 = " << v_bp1 << std::endl;
 
     vec2d v_ab1 = v_ap1 - v_bp1;
-    std::cout << "    v_ab1 = " << v_ab1 << std::endl;
+    // std::cout << "    v_ab1 = " << v_ab1 << std::endl;
 
     double I_a = a->inertia, I_b = b->inertia;
-    std::cout << "  Parameters for j: " << std::endl;
-    std::cout << "    v_ab1 = " << v_ab1 << std::endl;
-    std::cout << "    n = " << c.n << std::endl;
-    std::cout << "    m_a = " << a->mass << std::endl;
-    std::cout << "    m_b = " << b->mass << std::endl;
-    std::cout << "    r_ap = " << r_ap << std::endl;
-    std::cout << "    r_bp = " << r_bp << std::endl;
-    std::cout << "    I_a = " << I_a << std::endl;
-    std::cout << "    I_b = " << I_b << std::endl;
+    // std::cout << "  Parameters for j: " << std::endl;
+    // std::cout << "    v_ab1 = " << v_ab1 << std::endl;
+    // std::cout << "    n = " << c.n << std::endl;
+    // std::cout << "    m_a = " << a->mass << std::endl;
+    // std::cout << "    m_b = " << b->mass << std::endl;
+    // std::cout << "    r_ap = " << r_ap << std::endl;
+    // std::cout << "    r_bp = " << r_bp << std::endl;
+    // std::cout << "    I_a = " << I_a << std::endl;
+    // std::cout << "    I_b = " << I_b << std::endl;
 
     double j = impulse_parameter(
         v_ab1, c.n, a->mass, b->mass, r_ap, r_bp, I_a, I_b, 1);
-    std::cout << "====> j = " << j << std::endl;
+    // std::cout << "====> j = " << j << std::endl;
 
     vec2d v_a2 = a->speed + j * c.n / a->mass;
     vec2d v_b2 = b->speed - j * c.n / b->mass;
-    std::cout << "    v_a2 = " << v_a2 << std::endl;
-    std::cout << "    v_b2 = " << v_b2 << std::endl;
+    // std::cout << "    v_a2 = " << v_a2 << std::endl;
+    // std::cout << "    v_b2 = " << v_b2 << std::endl;
 
     double omega_a2 = omega_a1 + vec2d::cross(r_ap, j * c.n) / I_a;
     double omega_b2 = omega_b1 - vec2d::cross(r_bp, j * c.n) / I_b;
-    std::cout << "    omega_a2 = " << omega_a2 << std::endl;
-    std::cout << "    omega_b2 = " << omega_b2 << std::endl;
+    // std::cout << "    omega_a2 = " << omega_a2 << std::endl;
+    // std::cout << "    omega_b2 = " << omega_b2 << std::endl;
 
     a->speed = v_a2;
     a->angular_speed = to_deg(omega_a2);
