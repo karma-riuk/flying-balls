@@ -1,108 +1,204 @@
 #include "collisions.h"
 
 #include <algorithm>
+#include <cassert>
 #include <iostream>
 #include <vector>
 
-static std::vector<vec2d> edges_of(polygon& p) {
-    std::vector<vec2d> edges;
-    edges.reserve(p.global_points.size());
-
-    for (uint i = 0; i < p.global_points.size(); ++i)
-        edges.push_back(p.global_points[(i + 1) % p.global_points.size()] -
-                        p.global_points[i]);
-    return edges;
-}
-
-struct projection_t {
-    double min_proj, max_proj;
-    vec2d min_point, max_point;
+struct vertex {
+    vec2d v, p1, p2;
 };
 
-static projection_t project(polygon& p, vec2d axis) {
-    projection_t ret{INFINITY, -INFINITY};
+typedef std::pair<vec2d, vec2d> segment;
 
-    double proj;
-    for (auto& point : p.global_points) {
-        proj = vec2d::dot(point, axis);
+enum Orientation {
+    COLINEAR,
+    CLOCKWISE,
+    COUNTER_CLOCKWISE,
+};
 
-        if (proj < ret.min_proj) {
-            ret.min_proj = proj;
-            ret.min_point = point;
-        }
+static std::vector<vertex> vertices_of(polygon& p) {
+    std::vector<vertex> vertices;
+    vertices.reserve(p.global_points.size());
 
-        if (proj > ret.max_proj) {
-            ret.max_proj = proj;
-            ret.max_point = point;
-        }
-    }
+    // i = 1 and <= points.size() cuz { -1 % n = -1 } et c'est chiant
+    // so start from 1, "overflow" with i = points.size() and gg
+    for (uint i = 1; i <= p.global_points.size(); ++i)
+        vertices.push_back({
+            p.global_points[i % p.points.size()],
+            p.global_points[(i + 1) % p.points.size()],
+            p.global_points[(i - 1) % p.points.size()],
+        });
+    return vertices;
+}
 
+// Given three collinear points p, q, r, the function checks if
+// point q lies on line segment 'pr'
+static bool on_segment(vec2d& q, segment& pr) {
+    return q.x <= std::max(pr.first.x, pr.second.x) &&
+           q.x >= std::min(pr.first.x, pr.second.x) &&
+           q.y <= std::max(pr.first.y, pr.second.y) &&
+           q.y >= std::min(pr.first.y, pr.second.y);
+}
+
+static Orientation orientation(vec2d& p, vec2d& q, vec2d& r) {
+    int v = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+    if (v == 0)
+        return COLINEAR;
+    return v > 0 ? CLOCKWISE : COUNTER_CLOCKWISE;
+}
+
+static bool do_intersect(segment s1, segment s2) {
+    // Find the four orientations needed for general and
+    // special cases
+    Orientation o1 = orientation(s1.first, s1.second, s2.first);
+    Orientation o2 = orientation(s1.first, s1.second, s2.second);
+    Orientation o3 = orientation(s2.first, s2.second, s1.first);
+    Orientation o4 = orientation(s2.first, s2.second, s1.second);
+
+    // General case
+    if (o1 != o2 && o3 != o4)
+        return true;
+
+    // Special Cases
+    // p1, q1 and p2 are collinear and p2 lies on segment p1q1
+    if (o1 == COLINEAR && on_segment(s2.first, s1))
+        return true;
+
+    // p1, q1 and q2 are collinear and q2 lies on segment p1q1
+    if (o2 == COLINEAR && on_segment(s2.second, s1))
+        return true;
+
+    // p2, q2 and p1 are collinear and p1 lies on segment p2q2
+    if (o3 == COLINEAR && on_segment(s1.first, s2))
+        return true;
+
+    // p2, q2 and q1 are collinear and q1 lies on segment p2q2
+    if (o4 == COLINEAR && on_segment(s1.second, s2))
+        return true;
+
+    return false;
+}
+
+static std::vector<segment> edges_of(polygon& p) {
+    std::vector<segment> ret;
+    ret.reserve(p.points.size());
+    for (uint i = 0; i < p.points.size(); ++i)
+        ret.push_back(
+            {p.global_points[i], p.global_points[(i + 1) % p.points.size()]});
     return ret;
 }
 
-static collision convex_collides(polygon& p, polygon& q) {
-    collision ret{false};
+static collision penetration(segment& edge, vertex& vertex, vec2d& d) {
+    collision ret{true};
+    ret.impact_point = vertex.v;
 
-    std::vector<vec2d> edges_p = edges_of(p);
-    std::vector<vec2d> edges_q = edges_of(q);
+    vec2d n = (edge.second - edge.first).orthogonal();
+    ret.n = vec2d::normalize(n);
 
-    std::vector<vec2d> edges;
-    edges.reserve(edges_p.size() + edges_q.size());
-    edges.insert(edges.end(), edges_p.begin(), edges_p.end());
-    edges.insert(edges.end(), edges_q.begin(), edges_q.end());
+    if (vec2d::dot(n, d) > 0)
+        ret.n *= -1;
+    std::cout << "Double pene omg" << std::endl;
+    return ret;
+}
 
-    std::vector<vec2d> orthogonals;
-    orthogonals.reserve(edges.size());
-    for (auto& v : edges)
-        orthogonals.push_back(v.orthogonal());
+static collision parallel(segment edge_p, segment edge_q, vec2d d) {
+    collision ret{true};
 
-    std::vector<collision> candidate_collisions;
-    candidate_collisions.reserve(orthogonals.size());
+    vec2d line_start = edge_p.first;
+    vec2d base = vec2d::normalize(edge_p.second - line_start);
 
+    std::pair<double, vec2d> proj_p1, proj_p2, proj_q1, proj_q2;
+    proj_p1 = {0, edge_p.first};
+    proj_p2 = {vec2d::dot(edge_p.second - line_start, base), edge_p.second};
+    proj_q1 = {vec2d::dot(edge_q.first - line_start, base), edge_q.first};
+    proj_q2 = {vec2d::dot(edge_q.second - line_start, base), edge_q.second};
+
+    std::pair<double, vec2d>*p_min, *q_min, *p_max, *q_max;
+    if (proj_p1.first < proj_p2.first) {
+        p_min = &proj_p1;
+        p_max = &proj_p2;
+    } else {
+        p_min = &proj_p2;
+        p_max = &proj_p1;
+    }
+
+    if (proj_q1.first < proj_q2.first) {
+        q_min = &proj_q1;
+        q_max = &proj_q2;
+    } else {
+        q_min = &proj_q2;
+        q_max = &proj_q1;
+    }
+
+    vec2d min = p_min->first < q_min->first ? q_min->second : p_min->second;
+    vec2d max = p_max->first < q_max->first ? p_max->second : q_max->second;
+
+    ret.impact_point = (min + max) / 2;
+    std::cout << "impact point: " << ret.impact_point << std::endl;
+    ret.n = base.orthogonal();
+    if (vec2d::dot(ret.n, d) > 0)
+        ret.n *= -1;
+    std::cout << "Parallel lol" << std::endl;
+    return ret;
+}
+
+static bool are_vecs_parallel(vec2d s1, vec2d s2) {
+    return std::abs(vec2d::dot(vec2d::normalize(s1), vec2d::normalize(s2))) >
+           .99;
+}
+
+static double distance_between_parallel_segments(segment s1, segment s2) {
+    double area = vec2d::cross(s1.first - s2.first, s2.second - s2.first);
+    double base = vec2d::norm(s2.second - s2.first);
+    return std::abs(area / base);
+}
+
+#define SMALLEST_DIST 5
+
+static collision vertex_edge_collision(polygon& p, polygon& q) {
+    std::vector<vertex> vertices_p = vertices_of(p);
+    std::vector<segment> edges_q = edges_of(q);
     vec2d d = q.centroid() - p.centroid();
 
-    double min_overlap = INFINITY;
-    for (auto& o : orthogonals) {
-        vec2d axis = vec2d::normalize(o);
-        if (vec2d::dot(d, axis) > 0)
-            axis *= -1;
+    bool col1, col2;
+    for (auto& vertex : vertices_p)
+        for (auto& edge : edges_q) {
+            col1 = do_intersect(edge, {vertex.v, vertex.p1});
+            col2 = do_intersect(edge, {vertex.v, vertex.p2});
+            if (col1 || col2) {
+                if (col1 && col2)
+                    return penetration(edge, vertex, d);
 
+                vec2d edge_v = edge.second - edge.first;
+                if (are_vecs_parallel(edge_v, vertex.v - vertex.p1) &&
+                    distance_between_parallel_segments(
+                        edge, {vertex.v, vertex.p1}) < SMALLEST_DIST)
+                    return parallel(edge, {vertex.v, vertex.p1}, d);
 
-        projection_t p_proj = project(p, axis);
-        projection_t q_proj = project(q, axis);
-        if (p_proj.max_proj < q_proj.min_proj ||
-            q_proj.max_proj < p_proj.min_proj)
-            // the axis is separating (the projections don't overlap)
-            return ret;
-
-
-        double overlap = std::min(p_proj.max_proj, q_proj.max_proj) -
-                         std::max(p_proj.min_proj, q_proj.min_proj);
-
-        if (overlap < min_overlap) {
-            min_overlap = overlap;
-            ret.n = axis;
-
-            ret.impact_point = p_proj.max_proj > q_proj.min_proj
-                                   ? p_proj.min_point
-                                   : q_proj.max_point;
-
-            // if (vec2d::dot(axis, d) > 0) {
-            //     ret.impact_point = p_proj.max_proj > q_proj.min_proj
-            //                            ? q_proj.min_point
-            //                            : q_proj.max_point;
-            // } else {
-            //     ret.impact_point = p_proj.max_proj > q_proj.min_proj
-            //                            ? p_proj.min_point
-            //                            : p_proj.max_point;
-            // }
+                double dist = distance_between_parallel_segments(
+                    edge, {vertex.v, vertex.p2});
+                std::cout << "dist: " << dist << std::endl;
+                if (are_vecs_parallel(edge_v, vertex.v - vertex.p2) &&
+                    distance_between_parallel_segments(
+                        edge, {vertex.v, vertex.p2}) < SMALLEST_DIST)
+                    return parallel(edge, {vertex.v, vertex.p2}, d);
+            }
         }
-    }
-    // if no axis is sperating, then they must be colliding
-    ret.collides = true;
+    return {false};
+}
 
-    // if (vec2d::dot(d, ret.n) > 0)
-    //     ret.n *= -1;
+static collision convex_collides(polygon& p, polygon& q) {
+    collision ret;
+
+    std::cout << "Checking P is penetrates Q" << std::endl;
+    if ((ret = vertex_edge_collision(p, q)).collides)
+        return ret;
+
+    std::cout << "Checking Q is penetrates P" << std::endl;
+    if ((ret = vertex_edge_collision(q, p)).collides)
+        ret.n *= -1;
+
     return ret;
 }
 
