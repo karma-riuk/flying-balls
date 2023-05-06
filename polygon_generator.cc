@@ -66,14 +66,55 @@ polygon poly_generate::regular(double radius, uint n_sides, double mass) {
     return polygon{{0, 0}, 0, points, inertia, mass};
 }
 
-static double intertia_of_polygon_subtriangle(
-    vec2d& centroid, vec2d& p1, vec2d& p2) {
-    double base, height;
-    if (vec2d::norm(p1 - centroid) > vec2d::norm(p2 - centroid))
-        base = vec2d::norm(p1 - centroid);
+static double area_of_triangle(vec2d& a, vec2d& b, vec2d& c) {
+    return std::abs(vec2d::cross(c - a, b - a)) / 2;
 }
 
-polygon poly_generate::general(std::vector<vec2d>& points, double mass) {
+static double area_of_poly(std::vector<vec2d>& points, vec2d& centroid) {
+    double area = 0;
+    for (int i = 0; i < points.size(); ++i)
+        area += area_of_triangle(
+            centroid, points[i], points[(i + 1) % points.size()]);
+    return area;
+}
+
+static double intertia_of_polygon_subtriangle(double total_mass,
+    double total_area,
+    vec2d& centroid,
+    vec2d& p1,
+    vec2d& p2) {
+    double partial_area = area_of_triangle(centroid, p1, p2);
+    std::cout << "partial area: " << partial_area << std::endl;
+    double partial_mass = total_mass * partial_area / total_area;
+
+    vec2d CA = p1 - centroid;
+    vec2d AB = p2 - p1;
+
+    return partial_mass / 2 *
+           (vec2d::norm2(AB) / 3 + vec2d::dot(AB, CA) + vec2d::norm2(CA));
+}
+
+static vec2d centroid(std::vector<vec2d>& points) {
+    double x = 0, y = 0;
+    for (auto& p : points)
+        x += p.x, y += p.y;
+
+    return vec2d{x, y} / points.size();
+}
+
+polygon poly_generate::general(std::vector<vec2d> points, double mass) {
     double intertia = 0;
+    vec2d c = centroid(points);
+    double area = area_of_poly(points, c);
+    std::cout << "area: " << area << std::endl;
+
+    std::cout << "centroid: " << c << std::endl;
+    for (int i = 0; i < points.size(); ++i)
+        intertia += intertia_of_polygon_subtriangle(
+            mass, area, c, points[i], points[(i + 1) % points.size()]);
+
+    for (auto& p : points) // set the center of the polygon to it's centroid
+        p -= c;
+
     return polygon{{0, 0}, 0, points, intertia, mass};
 }

@@ -116,6 +116,10 @@ class vec2d {
         return {-omega * v.y, omega * v.x};
     }
 
+    static double norm2(const vec2d& v) {
+        return vec2d::dot(v, v);
+    }
+
     static double norm(const vec2d& v) {
         return std::sqrt(dot(v, v));
     }
