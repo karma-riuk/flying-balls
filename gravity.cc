@@ -1,6 +1,7 @@
 #include "gravity.h"
 
 #include "game.h"
+#include "polygons.h"
 
 #include <cmath>
 #include <gtk/gtk.h>
@@ -79,6 +80,19 @@ void gravity_change(double dx, double dy) {
     } else {
         g_r += dx;
         g_g -= dy * newton_field_increment;
+    }
+}
+
+vec2d gravity_vector(const polygon* p) {
+    if (constant_field) {
+        return g;
+    } else {
+        vec2d b_c = vec2d{width / 2.0, height / 2.0} - p->centroid();
+        double r2 = vec2d::dot(b_c, b_c);
+        if (r2 < g_r * g_r)
+            return vec2d{0, 0};
+        else
+            return g_g / r2 / sqrt(r2) * b_c;
     }
 }
 
