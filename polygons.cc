@@ -3,6 +3,7 @@
 #include "cairo.h"
 #include "collisions.h"
 #include "game.h"
+#include "gravity.h"
 #include "matrix.h"
 #include "polygon_generator.h"
 
@@ -284,6 +285,10 @@ void polygons_update_state() {
         p->angle = std::fmod(p->angle, 360);
 
         p->translate(delta * p->speed);
+
+        vec2d g = gravity_vector(p);
+        p->translate(.5 * delta * delta * g);
+        p->speed += delta * g;
         // std::cout << *p << std::endl;
     }
 }
