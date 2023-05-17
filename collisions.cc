@@ -96,9 +96,10 @@ static collision penetration(segment& edge, vertex& vertex, vec2d& d) {
     vec2d n = (edge.second - edge.first).orthogonal();
     ret.n = vec2d::normalize(n);
 
-    if (vec2d::dot(n, d) > 0)
-        ret.n *= -1;
-    std::cout << "Double pene omg" << std::endl;
+    // if (vec2d::dot(n, d) > 0)
+    //     ret.n *= -1;
+    std::cout << "-------------- Impact: penetration --------------"
+              << std::endl;
     return ret;
 }
 
@@ -135,11 +136,10 @@ static collision parallel(segment edge_p, segment edge_q, vec2d d) {
     vec2d max = p_max->first < q_max->first ? p_max->second : q_max->second;
 
     ret.impact_point = (min + max) / 2;
-    std::cout << "impact point: " << ret.impact_point << std::endl;
     ret.n = base.orthogonal();
     if (vec2d::dot(ret.n, d) > 0)
         ret.n *= -1;
-    std::cout << "Parallel lol" << std::endl;
+    std::cout << "-------------- Impact: parallel --------------" << std::endl;
     return ret;
 }
 
@@ -154,35 +154,61 @@ static double distance_between_parallel_segments(segment s1, segment s2) {
     return std::abs(area / base);
 }
 
-#define SMALLEST_DIST 5
+#define SMALLEST_DIST 3
+
+static bool are_edges_colinear(segment& e1, segment& e2) {
+    vec2d e1_vec = e1.second - e1.first;
+    vec2d e2_vec = e2.second - e2.first;
+    return are_vecs_parallel(e1_vec, e2_vec) &&
+           distance_between_parallel_segments(e1, e2) < SMALLEST_DIST;
+}
 
 static collision vertex_edge_collision(polygon& p, polygon& q) {
     std::vector<vertex> vertices_p = vertices_of(p);
     std::vector<segment> edges_q = edges_of(q);
     vec2d d = q.centroid() - p.centroid();
 
+    segment edge_p1, edge_p2;
     bool col1, col2;
     for (auto& vertex : vertices_p)
-        for (auto& edge : edges_q) {
-            col1 = do_intersect(edge, {vertex.v, vertex.p1});
-            col2 = do_intersect(edge, {vertex.v, vertex.p2});
+        for (auto& edge_q : edges_q) {
+            edge_p1 = {vertex.v, vertex.p1};
+            edge_p2 = {vertex.v, vertex.p2};
+            col1 = do_intersect(edge_q, edge_p1);
+            col2 = do_intersect(edge_q, edge_p2);
+
             if (col1 || col2) {
+                if (are_edges_colinear(edge_q, edge_p1))
+                    return parallel(edge_q, edge_p1, d);
+
+                if (are_edges_colinear(edge_q, edge_p2))
+                    return parallel(edge_q, edge_p2, d);
+
                 if (col1 && col2)
-                    return penetration(edge, vertex, d);
+                    return penetration(edge_q, vertex, d);
+            }
+        }
+    return {false};
+}
 
-                vec2d edge_v = edge.second - edge.first;
-                if (are_vecs_parallel(edge_v, vertex.v - vertex.p1) &&
-                    distance_between_parallel_segments(
-                        edge, {vertex.v, vertex.p1}) < SMALLEST_DIST)
-                    return parallel(edge, {vertex.v, vertex.p1}, d);
+static collision vertex_vertex_collision(polygon& p, polygon& q) {
+    std::vector<vertex> vertices_p = vertices_of(p);
+    std::vector<segment> edges_q = edges_of(q);
+    vec2d d = q.centroid() - p.centroid();
 
-                double dist = distance_between_parallel_segments(
-                    edge, {vertex.v, vertex.p2});
-                std::cout << "dist: " << dist << std::endl;
-                if (are_vecs_parallel(edge_v, vertex.v - vertex.p2) &&
-                    distance_between_parallel_segments(
-                        edge, {vertex.v, vertex.p2}) < SMALLEST_DIST)
-                    return parallel(edge, {vertex.v, vertex.p2}, d);
+    for (auto& vertex : vertices_p)
+        for (auto& edge_q : edges_q) {
+            if (do_intersect(edge_q, {vertex.v, vertex.p1})) {
+                vec2d edge_q_vec = edge_q.second - edge_q.first;
+                vec2d n = vec2d::normalize(edge_q_vec.orthogonal());
+
+                if (vec2d::dot(n, d) > 0)
+                    n *= -1;
+
+                std::cout
+                    << "-------------- Impact: angle in angle --------------"
+                    << std::endl;
+                return {true, n, vertex.v};
             }
         }
     return {false};
@@ -191,14 +217,19 @@ static collision vertex_edge_collision(polygon& p, polygon& q) {
 static collision convex_collides(polygon& p, polygon& q) {
     collision ret;
 
-    std::cout << "Checking P is penetrates Q" << std::endl;
     if ((ret = vertex_edge_collision(p, q)).collides)
         return ret;
 
-    std::cout << "Checking Q is penetrates P" << std::endl;
-    if ((ret = vertex_edge_collision(q, p)).collides)
+    if ((ret = vertex_edge_collision(q, p)).collides) {
         ret.n *= -1;
+        return ret;
+    }
 
+    if ((ret = vertex_vertex_collision(p, q)).collides)
+        return ret;
+
+    if ((ret = vertex_vertex_collision(q, p)).collides)
+        ret.n *= -1;
     return ret;
 }
 

@@ -6,6 +6,7 @@
 #include "matrix.h"
 #include "polygon_generator.h"
 
+#include <algorithm>
 #include <iostream>
 #include <utility>
 
@@ -37,10 +38,17 @@ void polygons_init_state() {
     //                   .set_center({25 + width * 1. / 2, height / 2.})
     //                   .set_angle(0);
 
-    polygons[4] = poly_generate::rectangle(100, 200, 3)
-                      .set_center({200, 180})
-                      .set_angle(45)
+#define PROBLEMATIC_COUPLES 1
+#if PROBLEMATIC_COUPLES == 0
+    polygons[4] = poly_generate::regular(100, 3)
+                      .set_center({100, 400})
+                      .set_angle(0)
                       .set_speed({200, -10});
+
+    polygons[5] = poly_generate::square(100)
+                      .set_center({600, 400})
+                      .set_angle(45)
+                      .set_speed({-200, -10});
 
     // .set_angle(45)
     // .set_center({300, 650})
@@ -51,10 +59,10 @@ void polygons_init_state() {
     // .set_angle(-45)
     // .set_speed({200, 10});
 
-    polygons[5] = poly_generate::regular(100, 5)
-                      .set_angle(0)
-                      .set_center({600, 650})
-                      .set_speed({-200, 200});
+    // polygons[6] = poly_generate::regular(100, 5)
+    //                   .set_angle(0)
+    //                   .set_center({600, 650})
+    //                   .set_speed({-200, 200});
 
     // .set_angle(0)
     // .set_center({600, 650})
@@ -63,33 +71,28 @@ void polygons_init_state() {
     polygons[6] = poly_generate::general(
         {{0, 0}, {100, 0}, {100, 100}, {50, 150}, {0, 100}}, 3)
                       .set_center({400, 400});
+#elif PROBLEMATIC_COUPLES == 1
+    // for this problematic couple to work, remove the gravity
+    n_polygons = 7;
+    polygons[4] = poly_generate::regular(100, 3)
+                      .set_center({103.91, 684.587})
+                      .set_angle(280.108)
+                      .set_speed({190.114, 131.983})
+                      .set_angular_speed(32.6448);
 
-#define PROBLEMATIC_COUPLES 0
+    polygons[5] = poly_generate::square(100)
+                      .set_center({614.338, 514.889})
+                      .set_angle(-54.3526)
+                      .set_speed({-70.0347, -62.4788})
+                      .set_angular_speed(-39.3846);
 
-#if PROBLEMATIC_COUPLES == 1
-    // After about 20 secs (when they are both in the center at the bottom)
-    // the square hits the octogon with a high angular speed and they get stuck,
-    // why?
-    polygons[4] = poly_generate::square(100, 1)
-                      .set_center({300, 180})
-                      .set_angle(-60)
-                      .set_speed({200, -10});
-    polygons[5] = poly_generate::regular(100, 8)
-                      .set_center({600, 650})
-                      .set_speed({-200, 200});
-#endif
+    polygons[6] = poly_generate::general(
+        {{0, 0}, {100, 0}, {100, 100}, {50, 150}, {0, 100}}, 3)
+                      .set_center({261.425, 556.613})
+                      .set_angle(-122.59)
+                      .set_speed({-46.9522, 48.5392})
+                      .set_angular_speed(-35.5983);
 
-#if PROBLEMATIC_COUPLES == 2
-    // After a couple of frames, I think we have the case were we have vertex
-    // colliding with vertex (and not the vertex vs edge we usually have)
-    polygons[4] = poly_generate::square(100, 1)
-                      .set_angle(45)
-                      .set_center({300, 650})
-                      .set_angular_speed(181)
-                      .set_speed({200, -10});
-    polygons[5] = poly_generate::regular(100, 8)
-                      .set_center({600, 650})
-                      .set_speed({-200, -10});
 #endif
 }
 
@@ -142,15 +145,6 @@ static int8_t sign(double d) {
 static void handle_collision(collision& c, polygon* a, polygon* b) {
     // see https://www.myphysicslab.com/engine2D/collision-en.html for the
     // formulas
-
-    // avoid the polygons getting stuck if, on the frame after the impact,
-    // the polygon a is still inside of b
-    // std::cout << "sign(v_a x n) = " <<  << std::endl;
-    if (vec2d::dot(a->speed, c.n) > 0 &&
-        vec2d::dot(a->speed, c.impact_point - a->centroid()) > 0 &&
-        sign(vec2d::cross(c.n, a->speed)) == -sign(a->angular_speed))
-        // might have to tweak this condition
-        return;
     double omega_a1 = to_rad(a->angular_speed);
     double omega_b1 = to_rad(b->angular_speed);
 
@@ -167,6 +161,21 @@ static void handle_collision(collision& c, polygon* a, polygon* b) {
 
     vec2d v_ab1 = v_ap1 - v_bp1;
     // std::cout << "    v_ab1 = " << v_ab1 << std::endl;
+
+    // avoid the polygons getting stuck if, on the frame after the impact,
+    // the polygon a is still inside of b
+    // std::cout << "sign(v_a x n) = " <<  << std::endl;
+    if (a->collided_with.find(b) != a->collided_with.end())
+    // if (vec2d::dot(v_ap1, v_bp1) < 0)
+    // might have to tweak this condition
+    {
+        std::cout << "Lol actually no, nevermind" << std::endl;
+        return;
+    }
+
+    a->collided_with.insert(b);
+    b->collided_with.insert(a);
+
 
     double I_a = a->inertia, I_b = b->inertia;
     // std::cout << "  Parameters for j: " << std::endl;
@@ -205,6 +214,7 @@ collision col; // tbd
 static void check_collisions(polygon* current_p) {
     rect cur_bound = current_p->get_bounding_box();
 
+    bool collided_with_something = false;
     for (polygon* other_p = polygons; other_p != polygons + n_polygons;
          ++other_p) {
         if (other_p == current_p) // polygons don't collide with themselves
@@ -215,19 +225,33 @@ static void check_collisions(polygon* current_p) {
             // std::cout << "Bounding boxes do collide" << std::endl;
             collision c = collides(*current_p, *other_p);
             if (c.collides) {
+                collided_with_something = true;
                 col = c;
-                std::cout << "colliding" << std::endl;
-                std::cout << "speed before: " << current_p->speed << std::endl;
-                std::cout << "angular speed before: "
-                          << current_p->angular_speed << std::endl;
+                std::cout << "Between " << current_p->label << " and "
+                          << other_p->label << std::endl;
+                std::cout << "----- BEFORE -----" << std::endl;
+                std::cout << *current_p << std::endl;
+                std::cout << *other_p << std::endl;
                 handle_collision(c, current_p, other_p);
-                std::cout << "speed after: " << current_p->speed << std::endl;
-                std::cout << "angular speed after: " << current_p->angular_speed
-                          << std::endl;
-                std::cout << std::endl;
+                std::cout << "----- AFTER -----" << std::endl;
+                std::cout << *current_p << std::endl;
+                std::cout << *other_p << std::endl;
+            } else if (current_p->collided_with.find(other_p) !=
+                       current_p->collided_with.end()) {
+                std::cout << "Removing shit" << std::endl;
+                current_p->collided_with.erase(other_p);
+                other_p->collided_with.erase(current_p);
+                //     std::remove(current_p->collided_with.begin(),
+                //         current_p->collided_with.end(),
+                //         other_p);
+                // std::remove(other_p->collided_with.begin(),
+                //     other_p->collided_with.end(),
+                //     current_p);
             }
         }
     }
+    if (!collided_with_something && current_p->collided_with.size() > 0)
+        current_p->collided_with.clear();
 }
 
 static void check_border_collision(polygon* p) {
@@ -255,8 +279,12 @@ void polygons_update_state() {
             continue;
         // check_border_collision(p);
         check_collisions(p);
+
         p->rotate(delta * p->angular_speed);
+        p->angle = std::fmod(p->angle, 360);
+
         p->translate(delta * p->speed);
+        // std::cout << *p << std::endl;
     }
 }
 
@@ -311,6 +339,8 @@ void polygon::draw(cairo_t* cr) const {
     // draw centroid
     vec2d centroid = this->centroid();
     draw_circle(cr, centroid, 1);
+
+    (10 * delta * this->speed).draw(cr, centroid);
 }
 
 void polygons_draw(cairo_t* cr) {
