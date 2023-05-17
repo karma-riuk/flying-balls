@@ -74,7 +74,7 @@ class vec2d {
         return {-y, x};
     }
 
-    void draw(cairo_t* cr, vec2d p) {
+    void draw(cairo_t* cr, vec2d p) const {
         double arrow_lenght_ = 10 * vec2d::norm(*this);
         double arrow_degrees_ = .5;
 
