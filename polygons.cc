@@ -124,10 +124,6 @@ static double impulse_parameter(vec2d v_ab1,
     return nominator / denominator;
 }
 
-static int8_t sign(double d) {
-    return d >= 0 ? 1 : -1;
-}
-
 static void handle_collision(collision& c, polygon* a, polygon* b) {
     // see https://www.myphysicslab.com/engine2D/collision-en.html for the
     // formulas
@@ -136,43 +132,22 @@ static void handle_collision(collision& c, polygon* a, polygon* b) {
 
     vec2d r_ap = c.impact_point - a->centroid();
     vec2d v_ap1 = a->speed + vec2d::cross(omega_a1, r_ap);
-    // std::cout << "    p = " << c.impact_point << std::endl;
-    // std::cout << "    r_ap = " << r_ap << std::endl;
-    // std::cout << "    v_ap1 = " << v_ap1 << std::endl;
 
     vec2d r_bp = c.impact_point - b->centroid();
     vec2d v_bp1 = b->speed + vec2d::cross(omega_b1, r_bp);
-    // std::cout << "    r_bp = " << r_bp << std::endl;
-    // std::cout << "    v_bp1 = " << v_bp1 << std::endl;
 
     vec2d v_ab1 = v_ap1 - v_bp1;
-    // std::cout << "    v_ab1 = " << v_ab1 << std::endl;
 
     // avoid the polygons getting stuck if, on the frame after the impact,
     // the polygon a is still inside of b
-    // std::cout << "sign(v_a x n) = " <<  << std::endl;
     if (a->collided_with.find(b) != a->collided_with.end())
-    // if (vec2d::dot(v_ap1, v_bp1) < 0)
-    // might have to tweak this condition
-    {
-        std::cout << "Lol actually no, nevermind" << std::endl;
         return;
-    }
 
     a->collided_with.insert(b);
     b->collided_with.insert(a);
 
 
     double I_a = a->inertia, I_b = b->inertia;
-    // std::cout << "  Parameters for j: " << std::endl;
-    // std::cout << "    v_ab1 = " << v_ab1 << std::endl;
-    // std::cout << "    n = " << c.n << std::endl;
-    // std::cout << "    m_a = " << a->mass << std::endl;
-    // std::cout << "    m_b = " << b->mass << std::endl;
-    // std::cout << "    r_ap = " << r_ap << std::endl;
-    // std::cout << "    r_bp = " << r_bp << std::endl;
-    // std::cout << "    I_a = " << I_a << std::endl;
-    // std::cout << "    I_b = " << I_b << std::endl;
 
     double j = impulse_parameter(v_ab1,
         c.n,
@@ -183,17 +158,12 @@ static void handle_collision(collision& c, polygon* a, polygon* b) {
         I_a,
         I_b,
         restitution_coefficient_get());
-    // std::cout << "====> j = " << j << std::endl;
 
     vec2d v_a2 = a->speed + j * c.n / a->mass;
     vec2d v_b2 = b->speed - j * c.n / b->mass;
-    // std::cout << "    v_a2 = " << v_a2 << std::endl;
-    // std::cout << "    v_b2 = " << v_b2 << std::endl;
 
     double omega_a2 = omega_a1 + vec2d::cross(r_ap, j * c.n) / I_a;
     double omega_b2 = omega_b1 - vec2d::cross(r_bp, j * c.n) / I_b;
-    // std::cout << "    omega_a2 = " << omega_a2 << std::endl;
-    // std::cout << "    omega_b2 = " << omega_b2 << std::endl;
 
     a->speed = v_a2;
     a->angular_speed = to_deg(omega_a2);
@@ -220,55 +190,20 @@ static void check_collisions(polygon* current_p) {
         rect other_bound = other_p->get_bounding_box();
         if (bounding_rects_collide(cur_bound, other_bound) ||
             bounding_rects_collide(other_bound, cur_bound)) {
-            // std::cout << "Bounding boxes do collide" << std::endl;
             collision c = collides(*current_p, *other_p);
             if (c.collides) {
                 collided_with_something = true;
                 col = c;
-                std::cout << "Between " << current_p->label << " and "
-                          << other_p->label << std::endl;
-                std::cout << "----- BEFORE -----" << std::endl;
-                std::cout << *current_p << std::endl;
-                std::cout << *other_p << std::endl;
                 handle_collision(c, current_p, other_p);
-                std::cout << "----- AFTER -----" << std::endl;
-                std::cout << *current_p << std::endl;
-                std::cout << *other_p << std::endl;
             } else if (current_p->collided_with.find(other_p) !=
                        current_p->collided_with.end()) {
-                std::cout << "Removing shit" << std::endl;
                 current_p->collided_with.erase(other_p);
                 other_p->collided_with.erase(current_p);
-                //     std::remove(current_p->collided_with.begin(),
-                //         current_p->collided_with.end(),
-                //         other_p);
-                // std::remove(other_p->collided_with.begin(),
-                //     other_p->collided_with.end(),
-                //     current_p);
             }
         }
     }
     if (!collided_with_something && current_p->collided_with.size() > 0)
         current_p->collided_with.clear();
-}
-
-static void check_border_collision(polygon* p) {
-    for (auto& point : p->global_points) {
-        bool hit_vert_wall = point.x <= 0 || point.x >= width;
-        bool hit_hori_wall = point.y <= 0 || point.y >= width;
-
-        if (hit_vert_wall || hit_hori_wall) {
-            p->set_angular_speed(-p->angular_speed); // this is not accurate,
-                                                     // but avoids bugs for now
-
-            if (hit_vert_wall)
-                p->speed.x *= -1;
-            if (hit_hori_wall)
-                p->speed.y *= -1;
-
-            break;
-        }
-    }
 }
 
 void polygons_update_state() {
@@ -326,8 +261,6 @@ static void draw_circle(cairo_t* cr, vec2d p, double radius) {
 
 void polygon::draw(cairo_t* cr) const {
     // this->draw_bounding_rect(cr);
-    draw_circle(cr, col.impact_point, 3); // tbd
-    col.n.draw(cr, col.impact_point);     // tbd
 
     cairo_set_source_rgb(cr, 1, 1, 1);
 
@@ -342,10 +275,14 @@ void polygon::draw(cairo_t* cr) const {
     vec2d centroid = this->centroid();
     draw_circle(cr, centroid, 1);
 
+    // draw speed
     (10 * delta * this->speed).draw(cr, centroid);
 }
 
 void polygons_draw(cairo_t* cr) {
+    draw_circle(cr, col.impact_point, 3); // tbd
+    col.n.draw(cr, col.impact_point);     // tbd
+
     for (const polygon* p = polygons; p != polygons + n_polygons; ++p)
         p->draw(cr);
 }
