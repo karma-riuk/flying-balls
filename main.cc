@@ -199,6 +199,10 @@ gint keyboard_input(GtkWidget* widget, GdkEventKey* event) {
     case GDK_KEY_g:
         param_control_activate(&gravity_control);
         return TRUE;
+    case GDK_KEY_period: // evaluate and draw single frame
+        update_state();
+        gtk_widget_queue_draw(canvas);
+        return TRUE;
     case GDK_KEY_P:
     case GDK_KEY_p:
         game_animation_on_off();
