@@ -14,11 +14,10 @@
 #include <utility>
 
 polygon* polygons = nullptr;
-uint n_polygons = 7;
+uint n_polygons = 11;
 
 void polygons_init_state() {
     polygons = new polygon[n_polygons];
-
     int wall_thickness = 50;
     // north wall
     polygons[0] = poly_generate::rectangle(width, wall_thickness, INFINITY)
@@ -32,48 +31,32 @@ void polygons_init_state() {
     // east wall
     polygons[3] = poly_generate::rectangle(wall_thickness, height, INFINITY)
                       .set_center({width + wall_thickness / 2., height / 2.});
-    // polygons[0] = poly_generate::triangle(150, 150, 30)
-    //                   .set_center({200, 400})
-    //                   .set_angle(13)
-    //                   .set_angular_speed(10)
-    //                   .set_speed({200, 50});
-    // polygons[4] = poly_generate::rectangle(50, height / 2., INFINITY)
-    //                   .set_center({25 + width * 1. / 2, height / 2.})
-    //                   .set_angle(0);
+    polygons[4] = poly_generate::rectangle(50, height / 2., INFINITY)
+                      .set_center({25 + width * 1. / 2, height / 2.})
+                      .set_angle(0);
 
-#define PROBLEMATIC_COUPLES 1
+#define PROBLEMATIC_COUPLES 0
 #if PROBLEMATIC_COUPLES == 0
-    polygons[4] = poly_generate::regular(100, 3)
+    polygons[5] = poly_generate::regular(100, 3)
                       .set_center({100, 400})
                       .set_angle(0)
                       .set_speed({200, -10});
 
-    polygons[5] = poly_generate::square(100)
+    polygons[6] = poly_generate::square(100)
                       .set_center({600, 400})
                       .set_angle(45)
                       .set_speed({-200, -10});
 
-    // .set_angle(45)
-    // .set_center({300, 650})
-    // .set_angular_speed(181)
-    // .set_speed({200, -10});
-
-    // .set_center({200, 160})
-    // .set_angle(-45)
-    // .set_speed({200, 10});
-
-    // polygons[6] = poly_generate::regular(100, 5)
-    //                   .set_angle(0)
-    //                   .set_center({600, 650})
-    //                   .set_speed({-200, 200});
-
-    // .set_angle(0)
-    // .set_center({600, 650})
-    // .set_speed({-200, -10});
-
-    polygons[6] = poly_generate::general(
+    polygons[7] = poly_generate::general(
         {{0, 0}, {100, 0}, {100, 100}, {50, 150}, {0, 100}}, 3)
-                      .set_center({400, 400});
+                      .set_center({200, 600});
+
+    polygons[8] = poly_generate::rectangle(100, 150).set_center({600, 200});
+    polygons[9] = poly_generate::regular(50, 5).set_center({150, 150});
+    polygons[10] =
+        poly_generate::general({{0, 0}, {50, 80}, {0, 160}, {-50, 80}})
+            .set_center({700, 700})
+            .set_speed({0, -100});
 #elif PROBLEMATIC_COUPLES == 1
     // for this problematic couple to work, remove the gravity
     n_polygons = 7;
@@ -228,6 +211,11 @@ static void check_collisions(polygon* current_p) {
     for (polygon* other_p = polygons; other_p != polygons + n_polygons;
          ++other_p) {
         if (other_p == current_p) // polygons don't collide with themselves
+            continue;
+        if (vec2d::norm(current_p->speed) == 0 &&
+            vec2d::norm(other_p->speed) == 0)
+            // if both are not moving, no need to go through the whole
+            // collision detection thing
             continue;
         rect other_bound = other_p->get_bounding_box();
         if (bounding_rects_collide(cur_bound, other_bound) ||
