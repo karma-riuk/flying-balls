@@ -1,5 +1,7 @@
 #include "polygons.h"
 
+#include "balls.h" // just for the restitution_coefficient_get() function,
+                   // prolly should be placed in another header file
 #include "cairo.h"
 #include "collisions.h"
 #include "game.h"
@@ -189,8 +191,15 @@ static void handle_collision(collision& c, polygon* a, polygon* b) {
     // std::cout << "    I_a = " << I_a << std::endl;
     // std::cout << "    I_b = " << I_b << std::endl;
 
-    double j = impulse_parameter(
-        v_ab1, c.n, a->mass, b->mass, r_ap, r_bp, I_a, I_b, 1);
+    double j = impulse_parameter(v_ab1,
+        c.n,
+        a->mass,
+        b->mass,
+        r_ap,
+        r_bp,
+        I_a,
+        I_b,
+        restitution_coefficient_get());
     // std::cout << "====> j = " << j << std::endl;
 
     vec2d v_a2 = a->speed + j * c.n / a->mass;
