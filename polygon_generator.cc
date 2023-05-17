@@ -8,7 +8,8 @@ static double to_rad(double angle_in_deg) {
     return angle_in_deg * PI_180;
 }
 
-polygon poly_generate::rectangle(double width, double height, double mass) {
+polygon poly_generate::rectangle(
+    double width, double height, double mass, std::string label) {
     assert(width > 0);
     assert(height > 0);
     static const double one_over_twelve = 1. / 12;
@@ -19,11 +20,12 @@ polygon poly_generate::rectangle(double width, double height, double mass) {
             {width / 2, height / 2},
             {width / 2, -height / 2}},
         one_over_twelve * mass * (width * width + height * height),
-        mass};
+        mass,
+        label};
 }
 
 polygon poly_generate::triangle(
-    double side1, double side2, double angle, double mass) {
+    double side1, double side2, double angle, double mass, std::string label) {
     assert(side1 > 0);
     assert(side2 > 0);
     static const double one_over_36 = 1. / 36;
@@ -44,12 +46,16 @@ polygon poly_generate::triangle(
         0,
         {std::begin(points), std::end(points)},
         one_over_36 * mass * base * std::pow(height, 3),
-        mass};
+        mass,
+        label};
 }
 
-polygon poly_generate::regular(double radius, uint n_sides, double mass) {
+polygon poly_generate::regular(
+    double radius, uint n_sides, double mass, std::string label) {
     assert(n_sides > 2);
     std::vector<vec2d> points;
+    label += " ";
+    label += n_sides;
     points.reserve(n_sides);
     double theta = 2 * M_PI / n_sides;
 
@@ -63,7 +69,7 @@ polygon poly_generate::regular(double radius, uint n_sides, double mass) {
     double cot = cos_ / sin_;
 
     double inertia = mass * l * l / 24 * (1 + 3 * cot * cot);
-    return polygon{{0, 0}, 0, points, inertia, mass};
+    return polygon{{0, 0}, 0, points, inertia, mass, label};
 }
 
 static double area_of_triangle(vec2d& a, vec2d& b, vec2d& c) {
@@ -84,7 +90,6 @@ static double intertia_of_polygon_subtriangle(double total_mass,
     vec2d& p1,
     vec2d& p2) {
     double partial_area = area_of_triangle(centroid, p1, p2);
-    std::cout << "partial area: " << partial_area << std::endl;
     double partial_mass = total_mass * partial_area / total_area;
 
     vec2d CA = p1 - centroid;
@@ -102,13 +107,12 @@ static vec2d centroid(std::vector<vec2d>& points) {
     return vec2d{x, y} / points.size();
 }
 
-polygon poly_generate::general(std::vector<vec2d> points, double mass) {
+polygon poly_generate::general(
+    std::vector<vec2d> points, double mass, std::string label) {
     double intertia = 0;
     vec2d c = centroid(points);
     double area = area_of_poly(points, c);
-    std::cout << "area: " << area << std::endl;
 
-    std::cout << "centroid: " << c << std::endl;
     for (int i = 0; i < points.size(); ++i)
         intertia += intertia_of_polygon_subtriangle(
             mass, area, c, points[i], points[(i + 1) % points.size()]);
@@ -116,5 +120,5 @@ polygon poly_generate::general(std::vector<vec2d> points, double mass) {
     for (auto& p : points) // set the center of the polygon to it's centroid
         p -= c;
 
-    return polygon{{0, 0}, 0, points, intertia, mass};
+    return polygon{{0, 0}, 0, points, intertia, mass, label};
 }
