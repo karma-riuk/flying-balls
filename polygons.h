@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include <gtk/gtk.h>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -20,11 +21,13 @@ class polygon {
     std::vector<vec2d> points;
     double inertia;
     double mass;
+    std::string label;
 
     std::vector<vec2d> global_points = points;
 
     vec2d speed;
     double angular_speed;
+    std::unordered_set<polygon*> collided_with;
 
     void draw(cairo_t* cr) const;
     void draw_bounding_rect(cairo_t* cr) const;
@@ -91,6 +94,17 @@ class polygon {
             x += p.x, y += p.y;
 
         return vec2d{x, y} / points.size();
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, polygon& p) {
+        vec2d c = p.centroid();
+        os << p.label << ": " << std::endl;
+        os << "    mass: " << p.mass << std::endl;
+        os << "    position: " << c << std::endl;
+        os << "    angle: " << p.angle << std::endl;
+        os << "    speed: " << p.speed << std::endl;
+        os << "    angular speed: " << p.angular_speed << std::endl;
+        return os;
     }
 };
 
