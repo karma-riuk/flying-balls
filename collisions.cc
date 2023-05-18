@@ -96,10 +96,10 @@ static collision penetration(segment& edge, vertex& vertex, vec2d& d) {
     vec2d n = (edge.second - edge.first).orthogonal();
     ret.n = vec2d::normalize(n);
 
-    // if (vec2d::dot(n, d) > 0)
-    //     ret.n *= -1;
-    std::cout << "-------------- Impact: penetration --------------"
-              << std::endl;
+    if (vec2d::dot(n, d) > 0)
+        ret.n *= -1;
+    // std::cout << "-------------- Impact: penetration --------------"
+    //           << std::endl;
     return ret;
 }
 
@@ -139,7 +139,8 @@ static collision parallel(segment edge_p, segment edge_q, vec2d d) {
     ret.n = base.orthogonal();
     if (vec2d::dot(ret.n, d) > 0)
         ret.n *= -1;
-    std::cout << "-------------- Impact: parallel --------------" << std::endl;
+    // std::cout << "-------------- Impact: parallel --------------" <<
+    // std::endl;
     return ret;
 }
 
@@ -205,9 +206,9 @@ static collision vertex_vertex_collision(polygon& p, polygon& q) {
                 if (vec2d::dot(n, d) > 0)
                     n *= -1;
 
-                std::cout
-                    << "-------------- Impact: angle in angle --------------"
-                    << std::endl;
+                // std::cout
+                //     << "-------------- Impact: angle in angle --------------"
+                //     << std::endl;
                 return {true, n, vertex.v};
             }
         }
