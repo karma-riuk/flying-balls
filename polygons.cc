@@ -14,9 +14,10 @@
 #include <utility>
 
 polygon* polygons = nullptr;
-uint n_polygons = 11;
+uint n_polygons = 0;
 
 void polygons_init_state() {
+    n_polygons = 11;
     polygons = new polygon[n_polygons];
     int wall_thickness = 50;
     // north wall

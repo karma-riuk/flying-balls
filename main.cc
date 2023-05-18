@@ -39,13 +39,15 @@ void check_collisions_with_index() {
 
 void (*check_collisions)() = check_collisions_simple;
 
+unsigned int polys = 0;
+
 void update_state() {
     if (check_collisions)
         check_collisions();
     for (unsigned int i = 0; i < n_balls; ++i)
         ball_update_state(balls + i);
-    polygons_update_state();
     spaceship_update_state();
+    polygons_update_state();
 }
 
 /* Graphics System
@@ -55,8 +57,11 @@ void game_init() {
     srand(time(NULL));
     balls_init();
     assert(c_index_init());
-    polygons_init_state();
-    // spaceship_init_state();
+
+    if (polys)
+        polygons_init_state();
+    else
+        spaceship_init_state();
 }
 
 void game_destroy() {
@@ -241,6 +246,7 @@ void print_usage(const char* progname) {
         "usage: %s [options...]\n"
         "options:\n"
         "\t<width>x<height>\n"
+        "\tpolygons=<0 | 1> :: boolean\n"
         "\tn=<number of balls>\n"
         "\tfconst=<x-force>,<y-force> :: constant force field\n"
         "\tfnewt=<radius>,<g> :: radial, Newtonian force field\n"
@@ -310,6 +316,11 @@ int main(int argc, const char* argv[]) {
     for (int i = 1; i < argc; ++i) {
         if (sscanf(argv[i], "%dx%d", &w, &h) == 2)
             continue;
+        if (sscanf(argv[i], "polygons=%u", &polys) == 1) {
+            if (polys)
+                n_balls = 0;
+            continue;
+        }
         if (sscanf(argv[i], "n=%u", &n_balls) == 1)
             continue;
         if (sscanf(argv[i], "fconst=%lf,%lf", &fa, &fb) == 2) {
