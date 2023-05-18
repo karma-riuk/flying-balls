@@ -28,7 +28,7 @@ collisions.o: collisions.cc collisions.h vec2d.h
 
 .PHONY: run
 run: balls
-	./balls n=0
+	./balls polygons=1
 
 .PHONY: all
 all: $(PROGS)
