@@ -2,3 +2,4 @@ balls
 *.o
 compile_commands.json
 .cache/
+.vimspector.json
