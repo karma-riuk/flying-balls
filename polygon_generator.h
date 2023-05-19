@@ -7,31 +7,21 @@
 
 namespace poly_generate {
 
-    polygon rectangle(double width,
-        double height,
-        double mass = 1,
-        std::string label = "rectangle");
+    polygon
+    rectangle(double width, double height, std::string label = "rectangle");
 
-    inline polygon square(
-        double width, double mass = 1, std::string label = "square") {
+    inline polygon square(double width, std::string label = "square") {
         assert(width > 0);
-        return rectangle(width, width, mass, label);
+        return rectangle(width, width, label);
     };
 
-    polygon triangle(double side1,
-        double side2,
-        double angle,
-        double mass = 1,
-        std::string label = "triangle");
+    polygon triangle(
+        double side1, double side2, double angle, std::string label = "triangle"
+    );
 
-    polygon regular(double radius,
-        uint n_sides,
-        double mass = 1,
-        std::string label = "regular");
+    polygon regular(double radius, uint n_sides, std::string label = "regular");
 
-    polygon general(std::vector<vec2d> points,
-        double mass = 1,
-        std::string label = "general");
+    polygon general(std::vector<vec2d> points, std::string label = "general");
 
 }; // namespace poly_generate
 #endif

@@ -71,6 +71,14 @@ class polygon {
 
     polygon& set_mass(double m) {
         mass = m;
+        // TODO: This is pretty shit, but it's good to make stuff work now,
+        // since the only time we change the mass of an object is the wall,
+        // otherwise we take the area and the polygon_generator module handles
+        // that. But what's to be done is to extract the intertia calcualtion to
+        // a new module so that we can import it here, and recalculate the
+        // intertia of the polygon if the mass changes.
+        if (m == INFINITY)
+            inertia = INFINITY;
         return *this;
     }
 
@@ -102,6 +110,7 @@ class polygon {
         os << "    angle: " << p.angle << std::endl;
         os << "    speed: " << p.speed << std::endl;
         os << "    angular speed: " << p.angular_speed << std::endl;
+        os << "    intertia: " << p.inertia << std::endl;
         return os;
     }
 };

@@ -22,22 +22,27 @@ void polygons_init_state() {
     int wall_thickness = 50;
     uint n = 0;
     // north wall
-    polygons[n++] = poly_generate::rectangle(width, wall_thickness, INFINITY)
+    polygons[n++] = poly_generate::rectangle(width, wall_thickness)
+                        .set_mass(INFINITY)
                         .set_center({width / 2., -wall_thickness / 2.});
     // south wall
-    polygons[n++] = poly_generate::rectangle(width, wall_thickness, INFINITY)
+    polygons[n++] = poly_generate::rectangle(width, wall_thickness)
+                        .set_mass(INFINITY)
                         .set_center({width / 2., height + wall_thickness / 2.});
     // west wall
-    polygons[n++] = poly_generate::rectangle(wall_thickness, height, INFINITY)
+    polygons[n++] = poly_generate::rectangle(wall_thickness, height)
+                        .set_mass(INFINITY)
                         .set_center({-wall_thickness / 2., height / 2.});
     // east wall
-    polygons[n++] = poly_generate::rectangle(wall_thickness, height, INFINITY)
+    polygons[n++] = poly_generate::rectangle(wall_thickness, height)
+                        .set_mass(INFINITY)
                         .set_center({width + wall_thickness / 2., height / 2.});
 
     // middle wall
-    polygons[n++] = poly_generate::rectangle(50, height / 2., INFINITY)
+    polygons[n++] = poly_generate::rectangle(50, height / 2.)
+                        .set_mass(INFINITY)
                         .set_center({25 + width * 1. / 2, height / 2.})
-                        .set_angle(0);
+                        .set_angle(30);
 
     polygons[n++] = poly_generate::regular(100, 3)
                         .set_center({100, 400})
@@ -50,15 +55,16 @@ void polygons_init_state() {
                         .set_speed({-200, -10});
 
     polygons[n++] = poly_generate::general(
-                        {{0, 0}, {100, 0}, {100, 100}, {50, 150}, {0, 100}},
-                        3
+                        {{0, 0}, {100, 0}, {100, 100}, {50, 150}, {0, 100}}
     )
                         .set_center({200, 600})
                         .set_angle(45)
                         .set_speed({10, 0});
 
     polygons[n++] = poly_generate::rectangle(100, 150).set_center({600, 200});
-    polygons[n++] = poly_generate::regular(50, 5).set_center({150, 150});
+    polygons[n++] = poly_generate::regular(50, 5)
+                        .set_center({150, 150})
+                        .set_speed({50, -50});
     polygons[n++] =
         poly_generate::general({{0, 0}, {50, 80}, {0, 160}, {-50, 80}})
             .set_center({700, 700})
