@@ -1,5 +1,7 @@
 #include "collisions.h"
 
+#include "game.h"
+
 #include <algorithm>
 #include <cassert>
 #include <iostream>
@@ -96,8 +98,13 @@ static collision penetration(segment& edge, vertex& vertex, vec2d& d) {
     vec2d n = (edge.second - edge.first).orthogonal();
     ret.n = vec2d::normalize(n);
 
+
     if (vec2d::dot(n, d) > 0)
         ret.n *= -1;
+
+    vec2d temp = vertex.v - edge.first;
+    ret.overlap = vec2d::dot(temp, ret.n) * -ret.n;
+    ret.overlap += .1 * delta * -ret.n;
     // std::cout << "-------------- Impact: penetration --------------"
     //           << std::endl;
     return ret;
@@ -139,6 +146,11 @@ static collision parallel(segment edge_p, segment edge_q, vec2d d) {
     ret.n = base.orthogonal();
     if (vec2d::dot(ret.n, d) > 0)
         ret.n *= -1;
+
+    vec2d temp = ret.impact_point - edge_p.first;
+    ret.overlap = vec2d::dot(temp, ret.n) * -ret.n;
+    ret.overlap += .1 * delta * -ret.n;
+
     // std::cout << "-------------- Impact: parallel --------------" <<
     // std::endl;
     return ret;
@@ -206,10 +218,14 @@ static collision vertex_vertex_collision(polygon& p, polygon& q) {
                 if (vec2d::dot(n, d) > 0)
                     n *= -1;
 
+                vec2d temp = vertex.v - edge_q.first;
+                vec2d overlap = vec2d::dot(temp, n) * -n;
+                overlap += .1 * delta * -n;
+
                 // std::cout
                 //     << "-------------- Impact: angle in angle --------------"
                 //     << std::endl;
-                return {true, n, vertex.v};
+                return {true, n, vertex.v, overlap};
             }
         }
     return {false};
@@ -223,14 +239,17 @@ static collision convex_collides(polygon& p, polygon& q) {
 
     if ((ret = vertex_edge_collision(q, p)).collides) {
         ret.n *= -1;
+        ret.overlap *= -1;
         return ret;
     }
 
     if ((ret = vertex_vertex_collision(p, q)).collides)
         return ret;
 
-    if ((ret = vertex_vertex_collision(q, p)).collides)
+    if ((ret = vertex_vertex_collision(q, p)).collides) {
         ret.n *= -1;
+        ret.overlap *= -1;
+    }
     return ret;
 }
 

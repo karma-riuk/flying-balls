@@ -8,7 +8,7 @@
 
 extern double delta; /* simulation time delta in seconds */
 
-#define DEFAULT_DELTA 0.001
+#define DEFAULT_DELTA 0.01
 
 extern int width;  /* game canvas width */
 extern int height; /* game canvas height */

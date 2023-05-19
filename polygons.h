@@ -5,7 +5,6 @@
 
 #include <cmath>
 #include <gtk/gtk.h>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -27,7 +26,6 @@ class polygon {
 
     vec2d speed;
     double angular_speed;
-    std::unordered_set<polygon*> collided_with;
 
     void draw(cairo_t* cr) const;
     void draw_bounding_rect(cairo_t* cr) const;

@@ -17,70 +17,55 @@ polygon* polygons = nullptr;
 uint n_polygons = 0;
 
 void polygons_init_state() {
-    n_polygons = 11;
+    n_polygons = 20;
     polygons = new polygon[n_polygons];
     int wall_thickness = 50;
+    uint n = 0;
     // north wall
-    polygons[0] = poly_generate::rectangle(width, wall_thickness, INFINITY)
-                      .set_center({width / 2., -wall_thickness / 2.});
+    polygons[n++] = poly_generate::rectangle(width, wall_thickness, INFINITY)
+                        .set_center({width / 2., -wall_thickness / 2.});
     // south wall
-    polygons[1] = poly_generate::rectangle(width, wall_thickness, INFINITY)
-                      .set_center({width / 2., height + wall_thickness / 2.});
+    polygons[n++] = poly_generate::rectangle(width, wall_thickness, INFINITY)
+                        .set_center({width / 2., height + wall_thickness / 2.});
     // west wall
-    polygons[2] = poly_generate::rectangle(wall_thickness, height, INFINITY)
-                      .set_center({-wall_thickness / 2., height / 2.});
+    polygons[n++] = poly_generate::rectangle(wall_thickness, height, INFINITY)
+                        .set_center({-wall_thickness / 2., height / 2.});
     // east wall
-    polygons[3] = poly_generate::rectangle(wall_thickness, height, INFINITY)
-                      .set_center({width + wall_thickness / 2., height / 2.});
-    polygons[4] = poly_generate::rectangle(50, height / 2., INFINITY)
-                      .set_center({25 + width * 1. / 2, height / 2.})
-                      .set_angle(0);
+    polygons[n++] = poly_generate::rectangle(wall_thickness, height, INFINITY)
+                        .set_center({width + wall_thickness / 2., height / 2.});
 
-#define PROBLEMATIC_COUPLES 0
-#if PROBLEMATIC_COUPLES == 0
-    polygons[5] = poly_generate::regular(100, 3)
-                      .set_center({100, 400})
-                      .set_angle(0)
-                      .set_speed({200, -10});
+    // middle wall
+    polygons[n++] = poly_generate::rectangle(50, height / 2., INFINITY)
+                        .set_center({25 + width * 1. / 2, height / 2.})
+                        .set_angle(0);
 
-    polygons[6] = poly_generate::square(100)
-                      .set_center({600, 400})
-                      .set_angle(45)
-                      .set_speed({-200, -10});
+    polygons[n++] = poly_generate::regular(100, 3)
+                        .set_center({100, 400})
+                        .set_angle(0)
+                        .set_speed({200, -10});
 
-    polygons[7] = poly_generate::general(
-        {{0, 0}, {100, 0}, {100, 100}, {50, 150}, {0, 100}}, 3)
-                      .set_center({200, 600});
+    polygons[n++] = poly_generate::square(100)
+                        .set_center({600, 400})
+                        .set_angle(45)
+                        .set_speed({-200, -10});
 
-    polygons[8] = poly_generate::rectangle(100, 150).set_center({600, 200});
-    polygons[9] = poly_generate::regular(50, 5).set_center({150, 150});
-    polygons[10] =
+    polygons[n++] = poly_generate::general(
+                        {{0, 0}, {100, 0}, {100, 100}, {50, 150}, {0, 100}},
+                        3
+    )
+                        .set_center({200, 600})
+                        .set_angle(45)
+                        .set_speed({10, 0});
+
+    polygons[n++] = poly_generate::rectangle(100, 150).set_center({600, 200});
+    polygons[n++] = poly_generate::regular(50, 5).set_center({150, 150});
+    polygons[n++] =
         poly_generate::general({{0, 0}, {50, 80}, {0, 160}, {-50, 80}})
             .set_center({700, 700})
             .set_speed({0, -100});
-#elif PROBLEMATIC_COUPLES == 1
-    // for this problematic couple to work, remove the gravity
-    n_polygons = 7;
-    polygons[4] = poly_generate::regular(100, 3)
-                      .set_center({103.91, 684.587})
-                      .set_angle(280.108)
-                      .set_speed({190.114, 131.983})
-                      .set_angular_speed(32.6448);
 
-    polygons[5] = poly_generate::square(100)
-                      .set_center({614.338, 514.889})
-                      .set_angle(-54.3526)
-                      .set_speed({-70.0347, -62.4788})
-                      .set_angular_speed(-39.3846);
-
-    polygons[6] = poly_generate::general(
-        {{0, 0}, {100, 0}, {100, 100}, {50, 150}, {0, 100}}, 3)
-                      .set_center({261.425, 556.613})
-                      .set_angle(-122.59)
-                      .set_speed({-46.9522, 48.5392})
-                      .set_angular_speed(-35.5983);
-
-#endif
+    assert(n <= n_polygons);
+    n_polygons = n;
 }
 
 static double to_rad(double angle_in_deg) {
@@ -100,13 +85,14 @@ static bool is_point_inside_rect(rect rect, vec2d point) {
 
 static bool bounding_rects_collide(rect cur_bound, rect other_bound) {
     vec2d other_tl = other_bound.first, other_br = other_bound.second;
-    return is_point_inside_rect(cur_bound, other_tl) ||
-           is_point_inside_rect(cur_bound, {other_tl.x, other_br.y}) ||
-           is_point_inside_rect(cur_bound, {other_br.x, other_tl.y}) ||
-           is_point_inside_rect(cur_bound, other_br);
+    return is_point_inside_rect(cur_bound, other_tl)
+        || is_point_inside_rect(cur_bound, {other_tl.x, other_br.y})
+        || is_point_inside_rect(cur_bound, {other_br.x, other_tl.y})
+        || is_point_inside_rect(cur_bound, other_br);
 }
 
-static double impulse_parameter(vec2d v_ab1,
+static double impulse_parameter(
+    vec2d v_ab1,
     vec2d n,
     double m_a,
     double m_b,
@@ -114,13 +100,14 @@ static double impulse_parameter(vec2d v_ab1,
     vec2d r_bp,
     double I_a,
     double I_b,
-    double e) {
+    double e
+) {
     double nominator = -(1 + e) * vec2d::dot(v_ab1, n);
 
     double r_ap_cross_n = vec2d::cross(r_ap, n);
     double r_bp_cross_n = vec2d::cross(r_bp, n);
-    double denominator = 1 / m_a + 1 / m_b + r_ap_cross_n * r_ap_cross_n / I_a +
-                         r_bp_cross_n * r_bp_cross_n / I_b;
+    double denominator = 1 / m_a + 1 / m_b + r_ap_cross_n * r_ap_cross_n / I_a
+                       + r_bp_cross_n * r_bp_cross_n / I_b;
 
     return nominator / denominator;
 }
@@ -139,18 +126,26 @@ static void handle_collision(collision& c, polygon* a, polygon* b) {
 
     vec2d v_ab1 = v_ap1 - v_bp1;
 
-    // avoid the polygons getting stuck if, on the frame after the impact,
-    // the polygon a is still inside of b
-    if (a->collided_with.find(b) != a->collided_with.end())
-        return;
+    if (vec2d::norm(c.overlap) > 10)
+        c.overlap = -.1 * vec2d::normalize(c.overlap);
+    // std::cout << c.overlap << std::endl;
+    if (b->mass == INFINITY)
+        a->translate(c.overlap);
+    else {
+        double ma = a->mass;
+        double mb = b->mass;
+        double m_total = ma + mb;
 
-    a->collided_with.insert(b);
-    b->collided_with.insert(a);
-
+        // If b is wall, then mb / m_total = INFINITY / INFINITY = -nan,
+        // so we need the if statement above
+        a->translate(c.overlap * mb / m_total);
+        b->translate(-c.overlap * ma / m_total);
+    }
 
     double I_a = a->inertia, I_b = b->inertia;
 
-    double j = impulse_parameter(v_ab1,
+    double j = impulse_parameter(
+        v_ab1,
         c.n,
         a->mass,
         b->mass,
@@ -158,7 +153,8 @@ static void handle_collision(collision& c, polygon* a, polygon* b) {
         r_bp,
         I_a,
         I_b,
-        restitution_coefficient_get());
+        restitution_coefficient_get()
+    );
 
     vec2d v_a2 = a->speed + j * c.n / a->mass;
     vec2d v_b2 = b->speed - j * c.n / b->mass;
@@ -173,45 +169,27 @@ static void handle_collision(collision& c, polygon* a, polygon* b) {
     b->angular_speed = to_deg(omega_b2);
 }
 
-collision col; // tbd
-
 static void check_collisions(polygon* current_p) {
     rect cur_bound = current_p->get_bounding_box();
 
-    bool collided_with_something = false;
-    for (polygon* other_p = polygons; other_p != polygons + n_polygons;
-         ++other_p) {
+    collision c;
+    polygon* other_p;
+    for (other_p = polygons; other_p != polygons + n_polygons; ++other_p) {
         if (other_p == current_p) // polygons don't collide with themselves
             continue;
-        if (vec2d::norm(current_p->speed) == 0 &&
-            vec2d::norm(other_p->speed) == 0)
-            // if both are not moving, no need to go through the whole
-            // collision detection thing
-            continue;
         rect other_bound = other_p->get_bounding_box();
-        if (bounding_rects_collide(cur_bound, other_bound) ||
-            bounding_rects_collide(other_bound, cur_bound)) {
-            collision c = collides(*current_p, *other_p);
-            if (c.collides) {
-                collided_with_something = true;
-                col = c;
-                handle_collision(c, current_p, other_p);
-            } else if (current_p->collided_with.find(other_p) !=
-                       current_p->collided_with.end()) {
-                current_p->collided_with.erase(other_p);
-                other_p->collided_with.erase(current_p);
-            }
+        if ((bounding_rects_collide(cur_bound, other_bound)
+             || bounding_rects_collide(other_bound, cur_bound))
+            && (c = collides(*current_p, *other_p)).collides) {
+            handle_collision(c, current_p, other_p);
         }
     }
-    if (!collided_with_something && current_p->collided_with.size() > 0)
-        current_p->collided_with.clear();
 }
 
 void polygons_update_state() {
     for (polygon* p = polygons; p != polygons + n_polygons; ++p) {
         if (p->mass == INFINITY) // immovable objects don't need to be updated
             continue;
-        // check_border_collision(p);
         check_collisions(p);
 
         p->rotate(delta * p->angular_speed);
@@ -222,7 +200,6 @@ void polygons_update_state() {
         vec2d g = gravity_vector(p);
         p->translate(.5 * delta * delta * g);
         p->speed += delta * g;
-        // std::cout << *p << std::endl;
     }
 }
 
@@ -281,9 +258,6 @@ void polygon::draw(cairo_t* cr) const {
 }
 
 void polygons_draw(cairo_t* cr) {
-    // draw_circle(cr, col.impact_point, 3); // tbd
-    // col.n.draw(cr, col.impact_point);     // tbd
-
     for (const polygon* p = polygons; p != polygons + n_polygons; ++p)
         p->draw(cr);
 }

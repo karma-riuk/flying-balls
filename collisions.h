@@ -6,8 +6,9 @@
 
 struct collision {
     bool collides = false;
-    vec2d n; // minimum push vector
+    vec2d n;
     vec2d impact_point;
+    vec2d overlap; // minimum push vector
 };
 
 extern collision collides(polygon& p, polygon& q);
