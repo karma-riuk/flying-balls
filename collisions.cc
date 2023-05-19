@@ -37,10 +37,10 @@ static std::vector<vertex> vertices_of(polygon& p) {
 // Given three collinear points p, q, r, the function checks if
 // point q lies on line segment 'pr'
 static bool on_segment(vec2d& q, segment& pr) {
-    return q.x <= std::max(pr.first.x, pr.second.x) &&
-           q.x >= std::min(pr.first.x, pr.second.x) &&
-           q.y <= std::max(pr.first.y, pr.second.y) &&
-           q.y >= std::min(pr.first.y, pr.second.y);
+    return q.x <= std::max(pr.first.x, pr.second.x)
+        && q.x >= std::min(pr.first.x, pr.second.x)
+        && q.y <= std::max(pr.first.y, pr.second.y)
+        && q.y >= std::min(pr.first.y, pr.second.y);
 }
 
 static Orientation orientation(vec2d& p, vec2d& q, vec2d& r) {
@@ -87,7 +87,8 @@ static std::vector<segment> edges_of(polygon& p) {
     ret.reserve(p.points.size());
     for (uint i = 0; i < p.points.size(); ++i)
         ret.push_back(
-            {p.global_points[i], p.global_points[(i + 1) % p.points.size()]});
+            {p.global_points[i], p.global_points[(i + 1) % p.points.size()]}
+        );
     return ret;
 }
 
@@ -157,8 +158,8 @@ static collision parallel(segment edge_p, segment edge_q, vec2d d) {
 }
 
 static bool are_vecs_parallel(vec2d s1, vec2d s2) {
-    return std::abs(vec2d::dot(vec2d::normalize(s1), vec2d::normalize(s2))) >
-           .99;
+    return std::abs(vec2d::dot(vec2d::normalize(s1), vec2d::normalize(s2)))
+         > .99;
 }
 
 static double distance_between_parallel_segments(segment s1, segment s2) {
@@ -172,8 +173,8 @@ static double distance_between_parallel_segments(segment s1, segment s2) {
 static bool are_edges_colinear(segment& e1, segment& e2) {
     vec2d e1_vec = e1.second - e1.first;
     vec2d e2_vec = e2.second - e2.first;
-    return are_vecs_parallel(e1_vec, e2_vec) &&
-           distance_between_parallel_segments(e1, e2) < SMALLEST_DIST;
+    return are_vecs_parallel(e1_vec, e2_vec)
+        && distance_between_parallel_segments(e1, e2) < SMALLEST_DIST;
 }
 
 static collision vertex_edge_collision(polygon& p, polygon& q) {
