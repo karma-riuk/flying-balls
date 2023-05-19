@@ -114,5 +114,6 @@ extern uint n_polygons;
 extern void polygons_init_state();
 extern void polygons_update_state();
 extern void polygons_draw(cairo_t* cr);
+extern void polygons_destroy();
 
 #endif

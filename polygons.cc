@@ -277,13 +277,17 @@ void polygon::draw(cairo_t* cr) const {
     draw_circle(cr, centroid, 1);
 
     // draw speed
-    (10 * delta * this->speed).draw(cr, centroid);
+    (delta * this->speed).draw(cr, centroid);
 }
 
 void polygons_draw(cairo_t* cr) {
-    draw_circle(cr, col.impact_point, 3); // tbd
-    col.n.draw(cr, col.impact_point);     // tbd
+    // draw_circle(cr, col.impact_point, 3); // tbd
+    // col.n.draw(cr, col.impact_point);     // tbd
 
     for (const polygon* p = polygons; p != polygons + n_polygons; ++p)
         p->draw(cr);
+}
+
+void polygons_destroy() {
+    delete[] (polygons);
 }

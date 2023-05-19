@@ -67,6 +67,7 @@ void game_init() {
 void game_destroy() {
     c_index_destroy();
     balls_destroy();
+    polygons_destroy();
 }
 
 static guint animation_timeout_id = 0;
