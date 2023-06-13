@@ -84,10 +84,11 @@ class vec2d {
 
         vec2d end = p + (*this) * 30;
 
-        double x1 = end.x + arrow_lenght_ * cos(angle - arrow_degrees_);
-        double y1 = end.y + arrow_lenght_ * sin(angle - arrow_degrees_);
-        double x2 = end.x + arrow_lenght_ * cos(angle + arrow_degrees_);
-        double y2 = end.y + arrow_lenght_ * sin(angle + arrow_degrees_);
+        double head_length = fmin(10, arrow_lenght_);
+        double x1 = end.x + head_length * cos(angle - arrow_degrees_);
+        double y1 = end.y + head_length * sin(angle - arrow_degrees_);
+        double x2 = end.x + head_length * cos(angle + arrow_degrees_);
+        double y2 = end.y + head_length * sin(angle + arrow_degrees_);
 
         cairo_set_source_rgb(cr, 255, 0, 0);
 
