@@ -2,6 +2,7 @@
 #define VEC2D_H_INCLUDED
 
 #include "cairo.h"
+#include "color.h"
 
 #include <cmath>
 #include <iostream>
@@ -74,7 +75,7 @@ class vec2d {
         return {-y, x};
     }
 
-    void draw(cairo_t* cr, vec2d p) const {
+    void draw(cairo_t* cr, vec2d p, color_t color) const {
         double arrow_lenght_ = 10 * vec2d::norm(*this);
         double arrow_degrees_ = .5;
 
@@ -90,7 +91,7 @@ class vec2d {
         double x2 = end.x + head_length * cos(angle + arrow_degrees_);
         double y2 = end.y + head_length * sin(angle + arrow_degrees_);
 
-        cairo_set_source_rgb(cr, 255, 0, 0);
+        cairo_set_source_rgb(cr, color.red, color.green, color.blue);
 
         cairo_move_to(cr, p.x, p.y);
         cairo_line_to(cr, end.x, end.y);

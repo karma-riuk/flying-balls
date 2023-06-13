@@ -213,6 +213,10 @@ gint keyboard_input(GtkWidget* widget, GdkEventKey* event) {
     case GDK_KEY_p:
         game_animation_on_off();
         return TRUE;
+    case GDK_KEY_S:
+    case GDK_KEY_s:
+        draw_speed = !draw_speed;
+        return TRUE;
     case GDK_KEY_Q:
     case GDK_KEY_q:
         gtk_main_quit();

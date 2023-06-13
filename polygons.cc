@@ -13,8 +13,27 @@
 #include <iostream>
 #include <utility>
 
+#define ARROW_VAL_RATIO 1.7
+
+
+bool draw_speed = true;
+
 polygon* polygons = nullptr;
 uint n_polygons = 0;
+
+static double to_rad(double angle_in_deg) {
+    static double PI_180 = M_PI / 180.;
+    return angle_in_deg * PI_180;
+}
+
+static double to_deg(double angle_in_rad) {
+    static double PI_180 = 180. / M_PI;
+    return angle_in_rad * PI_180;
+}
+
+static double random_color_component() {
+    return 1.0 * (rand() % 200 + 56) / 255;
+};
 
 void polygons_init_state() {
     n_polygons = 20;
@@ -38,12 +57,19 @@ void polygons_init_state() {
                         .set_mass(INFINITY)
                         .set_center({width + wall_thickness / 2., height / 2.});
 
-    // middle wall
-    polygons[n++] = poly_generate::rectangle(50, height / 2.)
+    // top triangle wall
+    polygons[n++] = poly_generate::triangle(height / 4., height / 4., 90)
                         .set_mass(INFINITY)
-                        .set_center({25 + width * 1. / 2, height / 2.})
-                        .set_angle(30);
+                        .set_center({width / 2., height / 17.})
+                        .set_angle(-135);
+    // bottom triangle wall
+    polygons[n++] = poly_generate::triangle(height / 4., height / 4., 90)
+                        .set_mass(INFINITY)
+                        .set_center({width / 2., height - height / 17.})
+                        .set_angle(45);
 
+
+    // ---------- Shapes flying around start here ----------
     polygons[n++] = poly_generate::regular(100, 3)
                         .set_center({100, 400})
                         .set_angle(0)
@@ -64,24 +90,37 @@ void polygons_init_state() {
     polygons[n++] = poly_generate::rectangle(100, 150).set_center({600, 200});
     polygons[n++] = poly_generate::regular(50, 5)
                         .set_center({150, 150})
-                        .set_speed({50, -50});
-    polygons[n++] =
-        poly_generate::general({{0, 0}, {50, 80}, {0, 160}, {-50, 80}})
-            .set_center({700, 700})
-            .set_speed({0, -100});
+                        .set_speed({100, 0});
+
+    polygons[n++] = poly_generate::general({{40, 20},
+                                            {40, 40},
+                                            {80, 40},
+                                            {80, -40},
+                                            {40, -40},
+                                            {40, -20},
+                                            {-40, -20},
+                                            {-40, -40},
+                                            {-80, -40},
+                                            {-80, 40},
+                                            {-40, 40},
+                                            {-40, 20}})
+                        .set_center({700, 700})
+                        .set_speed({0, -100});
 
     assert(n <= n_polygons);
     n_polygons = n;
-}
 
-static double to_rad(double angle_in_deg) {
-    static double PI_180 = M_PI / 180.;
-    return angle_in_deg * PI_180;
-}
-
-static double to_deg(double angle_in_rad) {
-    static double PI_180 = 180. / M_PI;
-    return angle_in_rad * PI_180;
+    // Set the color of the polygons to random
+    for (polygon* p = polygons; p != polygons + n_polygons; ++p) {
+        p->color = {
+            random_color_component(),
+            random_color_component(),
+            random_color_component()};
+        hsv_t hsv = rgb2hsv(p->color);
+        if (hsv.val > 0.95)
+            hsv.val *= .7;
+        p->color = hsv2rgb(hsv);
+    }
 }
 
 static bool is_point_inside_rect(rect rect, vec2d point) {
@@ -252,15 +291,31 @@ void polygon::draw(cairo_t* cr) const {
         cairo_line_to(cr, point.x, point.y);
 
     cairo_line_to(cr, this->global_points[0].x, this->global_points[0].y);
-    cairo_stroke(cr);
-
+    if (mass == INFINITY) {
+        cairo_set_source_rgb(cr, .5, .5, .5);
+        cairo_fill(cr);
+    } else {
+        cairo_set_source_rgb(
+            cr,
+            this->color.red,
+            this->color.green,
+            this->color.blue
+        );
+        cairo_fill(cr);
+    }
 
     // draw centroid
     vec2d centroid = this->centroid();
     draw_circle(cr, centroid, 1);
 
+
     // draw speed
-    (delta * this->speed).draw(cr, centroid);
+    if (draw_speed && this->mass != INFINITY) {
+        hsv_t hsv = rgb2hsv(this->color);
+        hsv.val = hsv.val * ARROW_VAL_RATIO;
+        color_t arrow_color = hsv2rgb(hsv);
+        (delta * this->speed).draw(cr, centroid, arrow_color);
+    }
 }
 
 void polygons_draw(cairo_t* cr) {

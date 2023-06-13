@@ -1,6 +1,7 @@
 #ifndef POLYGONS_H_INCLUDED
 #define POLYGONS_H_INCLUDED
 
+#include "color.h"
 #include "vec2d.h"
 
 #include <cmath>
@@ -22,6 +23,7 @@ class polygon {
     double mass;
     std::string label;
 
+    color_t color;
     std::vector<vec2d> global_points = points;
 
     vec2d speed;
@@ -117,6 +119,8 @@ class polygon {
 
 extern polygon* polygons;
 extern uint n_polygons;
+
+extern bool draw_speed;
 
 extern void polygons_init_state();
 extern void polygons_update_state();
