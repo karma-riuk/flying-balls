@@ -1,5 +1,14 @@
 # From Flying Balls to Colliding Polygons
 
+## Table of contents
+
+- [Abstract](#abstract)
+- [Before vs After](#before-vs-after)
+  - [Context](#context)
+  - [Before](#before)
+  - [After](#after)
+- [Contact](#contact)
+
 ## Abstract
 
 > (text taken from the abstract of my report that you can find
