@@ -30,6 +30,8 @@ crucial that the simulation code be efficient to obtain smooth animations.
 
 ## Before vs After
 
+### Context
+
 A little of context for the follow videos:
 
 - in the first video, the special ball with an arrow inside is a "spaceship",
@@ -44,11 +46,11 @@ A little of context for the follow videos:
 
 ### Before
 
-![before video](before.webm)
+https://github.com/karma-riuk/flying-balls/assets/30158492/ddc0d608-9667-4a21-8132-e056e443e0e2
 
 ### After
 
-[after video](after.mp4)
+https://github.com/karma-riuk/flying-balls/assets/30158492/bd4013b8-bc01-4d52-aa2f-44dbc25de717
 
 <!-- ## Controls -->
 <!---->
