@@ -44,7 +44,7 @@ A little of context for the follow videos:
 
 ### Before
 
-[before video](before.webm)
+![before video](before.webm)
 
 ### After
 
