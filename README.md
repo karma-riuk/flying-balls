@@ -27,3 +27,33 @@ objects:
 
 The simulations are animated and displayed in real-time. It is also therefore
 crucial that the simulation code be efficient to obtain smooth animations.
+
+## Before vs After
+
+A little of context for the follow videos:
+
+- in the first video, the special ball with an arrow inside is a "spaceship",
+  that can be controlled by the user;
+- the yellow bar that appears after midway through both videos represent the
+  restitution coefficient of the collision resolution (the lower it is, the
+  greater the dampening on impact between objects);
+- the white line with a ball at the end that appears after the restitution
+  coefficient bar represents the gravity vector that gets applied to the speed
+  of each object at each frame, the ball is the direction the vector is pointing
+  it.
+
+### Before
+
+[before video](before.mp4)
+
+### After
+
+[after video](after.mp4)
+
+<!-- ## Controls -->
+<!---->
+<!-- ## Installation -->
+
+## Contact
+
+If you have any question concerning this work, feel free to contact me at [arno.fauconnet@gmail.com](mailto:arno.fauconnet@gmail.com)
