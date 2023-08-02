@@ -13,8 +13,8 @@ extern double delta; /* simulation time delta in seconds */
 extern int width;  /* game canvas width */
 extern int height; /* game canvas height */
 
-#define DEFAULT_WIDTH 800
-#define DEFAULT_HEIGHT 800
+#define DEFAULT_WIDTH 1000
+#define DEFAULT_HEIGHT 1000
 
 extern GtkWidget* canvas; /* game canvas object */
 

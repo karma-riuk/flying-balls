@@ -14,7 +14,7 @@
 #include <utility>
 
 #define ARROW_VAL_RATIO 1.7
-
+#define SUBSETPS 5
 
 bool draw_speed = true;
 
@@ -34,6 +34,21 @@ static double to_deg(double angle_in_rad) {
 static double random_color_component() {
     return 1.0 * (rand() % 200 + 56) / 255;
 };
+
+static vec2d random_velocity() {
+    double r2;
+    vec2d v;
+    do {
+        v.x = v_min + rand() % (v_max + 1 - v_min);
+        v.y = v_min + rand() % (v_max + 1 - v_min);
+        r2 = vec2d::dot(v, v);
+    } while (r2 > v_max * v_max || r2 < v_min * v_min);
+    if (rand() % 2)
+        v.x = -v.x;
+    if (rand() % 2)
+        v.y = -v.y;
+    return v;
+}
 
 void polygons_init_state() {
     n_polygons = 20;
@@ -68,7 +83,6 @@ void polygons_init_state() {
                         .set_center({width / 2., height - height / 17.})
                         .set_angle(45);
 
-
     // ---------- Shapes flying around start here ----------
     polygons[n++] = poly_generate::regular(100, 3)
                         .set_center({100, 400})
@@ -88,9 +102,14 @@ void polygons_init_state() {
                         .set_speed({10, 0});
 
     polygons[n++] = poly_generate::rectangle(100, 150).set_center({600, 200});
+
+    polygons[n++] = poly_generate::regular(72, 8)
+                        .set_center({500, 500})
+                        .set_speed({100, 0});
+
     polygons[n++] = poly_generate::regular(50, 5)
                         .set_center({150, 150})
-                        .set_speed({100, 0});
+                        .set_speed({150, 0});
 
     polygons[n++] = poly_generate::general({{40, 20},
                                             {40, 40},
@@ -232,19 +251,24 @@ static void check_collisions(polygon* current_p) {
 }
 
 void polygons_update_state() {
-    for (polygon* p = polygons; p != polygons + n_polygons; ++p) {
-        if (p->mass == INFINITY) // immovable objects don't need to be updated
-            continue;
-        check_collisions(p);
+    const static float sub_delta = delta / SUBSETPS;
 
-        p->rotate(delta * p->angular_speed);
-        p->angle = std::fmod(p->angle, 360);
+    for (uint i = SUBSETPS; i--;) {
+        for (polygon* p = polygons; p != polygons + n_polygons; ++p) {
+            // immovable objects don't need to be updated
+            if (p->mass == INFINITY)
+                continue;
+            check_collisions(p);
 
-        p->translate(delta * p->speed);
+            p->rotate(sub_delta * p->angular_speed);
+            p->angle = std::fmod(p->angle, 360);
 
-        vec2d g = gravity_vector(p);
-        p->translate(.5 * delta * delta * g);
-        p->speed += delta * g;
+            p->translate(sub_delta * p->speed);
+
+            vec2d g = gravity_vector(p);
+            p->translate(.5 * sub_delta * sub_delta * g);
+            p->speed += sub_delta * g;
+        }
     }
 }
 
@@ -307,7 +331,6 @@ void polygon::draw(cairo_t* cr) const {
     // draw centroid
     vec2d centroid = this->centroid();
     draw_circle(cr, centroid, 1);
-
 
     // draw speed
     if (draw_speed && this->mass != INFINITY) {
