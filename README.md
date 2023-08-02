@@ -55,11 +55,11 @@ A little of context for the follow videos:
 
 ### Before
 
-https://github.com/karma-riuk/flying-balls/assets/30158492/ddc0d608-9667-4a21-8132-e056e443e0e2
+[before](https://github.com/karma-riuk/flying-balls/assets/30158492/ddc0d608-9667-4a21-8132-e056e443e0e2)
 
 ### After
 
-https://github.com/karma-riuk/flying-balls/assets/30158492/bd4013b8-bc01-4d52-aa2f-44dbc25de717
+[after](https://github.com/karma-riuk/flying-balls/assets/30158492/bd4013b8-bc01-4d52-aa2f-44dbc25de717)
 
 <!-- ## Controls -->
 <!---->
